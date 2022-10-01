@@ -660,6 +660,8 @@ function showSummaryInfo {
     HMY=/usr/sbin/hmy
     HARMONY=/usr/sbin/harmony
 
+    EC2_IP="x.x.x.x"
+
     echo ''
     echo '#################################'
     echo '#  Harmony One CLI Information  #'
@@ -678,8 +680,8 @@ function showSummaryInfo {
     echo '#      AWS EC2 Information      #'
     echo '#################################'
     echo ''
-    echo "ID   :" $(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq '.instanceId' | tr -d '\"')
-    echo "Type :" $(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq '.instanceType' | tr -d '\"')
+    echo "ID   :" $(curl --silent http://$EC2_IP/latest/dynamic/instance-identity/document | jq '.instanceId' | tr -d '\"')
+    echo "Type :" $(curl --silent http://$EC2_IP/latest/dynamic/instance-identity/document | jq '.instanceType' | tr -d '\"')
     echo ''
     echo '##################################'
     echo '# Disk Space Information (/data) #'
