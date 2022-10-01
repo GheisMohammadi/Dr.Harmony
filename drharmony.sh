@@ -106,6 +106,7 @@ function installGo {
         rm $go_file_name
         echo "export PATH=\"/usr/local/go/bin:$PATH\"" >> ~/.bashrc
         source ~/.bashrc
+        . ~/.bashrc  # this line is same as previous line. but in some systems this one only works
     fi        
     go version
 }
@@ -167,10 +168,11 @@ function buildHarmonyBinary {
 #========================================================================
 function checkRequirements {
     echo "Checking for dependencies..."
+    REQUIRED_PKG="dialog"
     # check whether dialog is installed
     #APT_OK=$(dpkg-query -W --showformat='${Status}\n' apt|grep "install ok installed")
     #YUM_OK=$(dpkg-query -W --showformat='${Status}\n' yum|grep "install ok installed")
-    if [ -n "$(command -v dialog)" ]; then
+    if [ -z "$(command -v $REQUIRED_PKG)" ]; then
         if [ -n "$(command -v apt)" ]; then
             echo "installing $REQUIRED_PKG (apt) ..."
             sudo apt-get -y update
