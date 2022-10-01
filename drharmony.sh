@@ -265,7 +265,8 @@ function installNewNode {
     echo "setup new harmony validator "
 
     install_options=(1 "build binary from source code"
-                     2 "download binary")
+                     2 "download binary"
+                     3 "install rclone")
 
     selected_install_option=$(dialog --clear \
                     --backtitle "$BACKTITLE" \
@@ -287,6 +288,9 @@ function installNewNode {
                 ;;
             2)
                 installNewNodeFromBinaryFile
+                ;;
+            3)
+                install_rclone
                 ;;
             *)
                 res="back"
