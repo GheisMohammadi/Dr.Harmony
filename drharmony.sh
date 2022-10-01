@@ -1,6 +1,13 @@
 #!/bin/bash
 
-#dialog help:  https://manpages.ubuntu.com/manpages/bionic/man1/dialog.1.html
+cat << EOF
+____       _   _                                        
+|  _ \ _ __| | | | __ _ _ __ _ __ ___   ___  _ __  _   _ 
+| | | | '__| |_| |/ _` | '__| '_ ` _ \ / _ \| '_ \| | | |
+| |_| | |  |  _  | (_| | |  | | | | | | (_) | | | | |_| |
+|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | v0.1
+                                                   |___/ 
+EOF
 
 HEIGHT=15
 WIDTH=40
@@ -106,8 +113,13 @@ function installGo {
         rm $go_file_name
         echo "export PATH=\"/usr/local/go/bin:$PATH\"" >> ~/.bashrc
         source ~/.bashrc
-        . ~/.bashrc  # this line is same as previous line. but in some systems this one only works
-    fi        
+    fi     
+
+    CHECK_GO_INSTALL=$(go version|grep "go version")
+    if [ "$CHECK_GO_INSTALL" = "" ]; then
+        alias go=/usr/local/go/bin/go   
+    fi
+
     go version
 }
 
