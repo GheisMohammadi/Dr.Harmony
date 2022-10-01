@@ -45,6 +45,56 @@ function getUserInput2 {
 }
 
 #========================================================================
+# Requirements
+#========================================================================
+function checkRequirements {
+    echo "Checking for dependencies..."
+    REQUIRED_PKG="dialog"
+    # check whether dialog is installed
+    #APT_OK=$(dpkg-query -W --showformat='${Status}\n' apt|grep "install ok installed")
+    #YUM_OK=$(dpkg-query -W --showformat='${Status}\n' yum|grep "install ok installed")
+    if [ -z "$(command -v $REQUIRED_PKG)" ]; then
+        if [ -n "$(command -v apt)" ]; then
+            echo "installing $REQUIRED_PKG (apt) ..."
+            sudo apt-get -y update
+            sudo apt-get install -y $REQUIRED_PKG
+        elif [ -n "$(command -v yum)" ]; then
+            echo "installing $REQUIRED_PKG (yum) ..."
+            sudo yum -y update
+            sudo yum install -y $REQUIRED_PKG
+        else 
+            echo "install dependencies failed"
+        fi
+    fi
+
+    if [ -f "hmy" ]; then
+        echo "hmy command is ready"
+    else
+        unameOut="$(uname -s)"
+        case "${unameOut}" in
+            Linux*)     #machine=Linux
+                curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
+                ;;
+            Darwin*)    #machine=Mac
+                curl -O https://raw.githubusercontent.com/harmony-one/go-sdk/master/scripts/hmy.sh
+                chmod u+x hmy.sh
+                ./hmy.sh -d
+                ;;
+            CYGWIN*)    #machine=Cygwin
+                curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
+                ;;
+            MINGW*)     #machine=MinGw
+                curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
+                ;;
+            *)          
+                machine="UNKNOWN:${unameOut}"
+                echo "not supported os ($machine)!"
+        esac
+    fi
+
+}
+
+#========================================================================
 # Dependencies
 #========================================================================
 function askForNetwork {
@@ -60,7 +110,7 @@ function askForNetwork {
                     --ok-label "Next" --nocancel \
                     --menu "$MENU" \
                     $HEIGHT $WIDTH $CHOICE_HEIGHT \
-                    "${install_options[@]}" \
+                    "${network_options[@]}" \
                     2>&1 >/dev/tty)
     clear
     new_node_network_name="unknown"
@@ -173,56 +223,6 @@ function buildHarmonyBinary {
     installGo
     downloadAndBuildSourceCode
     echo "done"
-}
-
-#========================================================================
-# Requirements
-#========================================================================
-function checkRequirements {
-    echo "Checking for dependencies..."
-    REQUIRED_PKG="dialog"
-    # check whether dialog is installed
-    #APT_OK=$(dpkg-query -W --showformat='${Status}\n' apt|grep "install ok installed")
-    #YUM_OK=$(dpkg-query -W --showformat='${Status}\n' yum|grep "install ok installed")
-    if [ -z "$(command -v $REQUIRED_PKG)" ]; then
-        if [ -n "$(command -v apt)" ]; then
-            echo "installing $REQUIRED_PKG (apt) ..."
-            sudo apt-get -y update
-            sudo apt-get install -y $REQUIRED_PKG
-        elif [ -n "$(command -v yum)" ]; then
-            echo "installing $REQUIRED_PKG (yum) ..."
-            sudo yum -y update
-            sudo yum install -y $REQUIRED_PKG
-        else 
-            echo "install dependencies failed"
-        fi
-    fi
-
-    if [ -f "hmy" ]; then
-        echo "hmy command is ready"
-    else
-        unameOut="$(uname -s)"
-        case "${unameOut}" in
-            Linux*)     #machine=Linux
-                curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
-                ;;
-            Darwin*)    #machine=Mac
-                curl -O https://raw.githubusercontent.com/harmony-one/go-sdk/master/scripts/hmy.sh
-                chmod u+x hmy.sh
-                ./hmy.sh -d
-                ;;
-            CYGWIN*)    #machine=Cygwin
-                curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
-                ;;
-            MINGW*)     #machine=MinGw
-                curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
-                ;;
-            *)          
-                machine="UNKNOWN:${unameOut}"
-                echo "not supported os ($machine)!"
-        esac
-    fi
-
 }
 
 #========================================================================
