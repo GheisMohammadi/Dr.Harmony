@@ -18,7 +18,7 @@ A comprehensive graphical tool for inspecting, troubleshooting and tweaking a ha
 - download drharmony to your server:
 
 ```
-curl -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.sh & sudo chmod +x drharmony.sh
+curl -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.sh & sudo chmod +x ./drharmony.sh
 ```
 
 - and then

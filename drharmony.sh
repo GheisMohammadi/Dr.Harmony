@@ -1,18 +1,21 @@
 #!/bin/bash
 
+# Dr.Harmony version
+DrHarmony_Version='0.2'
+
 cat << EOF
 ____       _   _                                        
 |  _ \ _ __| | | | __ _ _ __ _ __ ___   ___  _ __  _   _ 
 | | | | '__| |_| |/ _` | '__| '_ ` _ \ / _ \| '_ \| | | |
 | |_| | |  |  _  | (_| | |  | | | | | | (_) | | | | |_| |
-|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | v0.1
+|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | V$DrHarmony_Version
                                                    |___/ 
 EOF
 
-HEIGHT=15
+HEIGHT=22
 WIDTH=40
-CHOICE_HEIGHT=4
-BACKTITLE="Harmony Node Utilities - Dr.Harmony-V0.1"
+CHOICE_HEIGHT=10
+BACKTITLE="Harmony Node Utilities - Dr.Harmony-V$DrHarmony_Version"
 MENU="Choose one of the following options:"
 menu_result="notready"
 #========================================================================
@@ -657,28 +660,49 @@ function adjustSyncMethod {
 #========================================================================
 # Info
 #========================================================================
-function showSummaryInfo {
+function showBinariesInfo {
     HMY=$(which hmy)
+    if [ -z HMY ]; then
+        HMY=/usr/sbin/hmy
+    fi
+
     HARMONY=$(which harmony)
-
-    HMY=/usr/sbin/hmy
-    HARMONY=/usr/sbin/harmony
-
-    EC2_IP="x.x.x.x"
+    if [ -z HARMONY ]; then
+        HARMONY=/usr/sbin/harmony
+    fi
 
     echo ''
     echo '#################################'
     echo '#  Harmony One CLI Information  #'
     echo '#################################'
     echo ''
-
     echo "hmy cli     :" ${HMY}
     ${HMY} version
-
     echo ''
     echo "harmony cli :" ${HARMONY}
     ${HARMONY} version
+    waitForAnyKey
+}
 
+function showBlockInformation {
+    echo '##################################'
+    echo '#    Block Number Information    #'
+    echo '##################################'
+    echo ''
+    local_shard_0=$(${HMY} blockchain latest-headers | jq '.["result"]["beacon-chain-header"]' | jq -r .number | xargs printf "%d\n")
+    local_shard_1=$(${HMY} blockchain latest-headers | jq '.["result"]["shard-chain-header"]' | jq -r .number | xargs printf "%d\n")
+    remote_shard_0=$(${HMY} blockchain latest-headers -n api.s0.t.hmny.io | jq '.["result"]["shard-chain-header"]' | jq -r .number | xargs printf "%d\n")
+    remote_shard_1=$(${HMY} blockchain latest-headers -n api.s1.t.hmny.io | jq '.["result"]["shard-chain-header"]' | jq -r .number | xargs printf "%d\n")
+    behind_shard_0="$((remote_shard_0-local_shard_0))"
+    behind_shard_1="$((remote_shard_1-local_shard_1))"
+    echo "local_shard_0 = $local_shard_0 | remote_shard_0 = $remote_shard_0 | different $behind_shard_0"
+    echo "local_shard_1 = $local_shard_1 | remote_shard_1 = $remote_shard_1 | different $behind_shard_1"
+    echo ''
+    waitForAnyKey
+}
+
+function showEc2Info {
+    EC2_IP="x.x.x.x"
     echo ''
     echo '#################################'
     echo '#      AWS EC2 Information      #'
@@ -686,6 +710,20 @@ function showSummaryInfo {
     echo ''
     echo "ID   :" $(curl --silent http://$EC2_IP/latest/dynamic/instance-identity/document | jq '.instanceId' | tr -d '\"')
     echo "Type :" $(curl --silent http://$EC2_IP/latest/dynamic/instance-identity/document | jq '.instanceType' | tr -d '\"')
+    echo ''
+    echo ''
+    waitForAnyKey
+}
+
+function showDiskInfo {
+    echo '##################################'
+    echo '# Disk Space Information (/) #'
+    echo '##################################'
+    echo ''
+    echo "Partition Type :" $(df -Th | grep "/" | awk '{print $2}')
+    echo "Total          :" $(df -Th | grep "/" | awk '{print $3}')
+    echo "Used           :" $(df -Th | grep "/" | awk '{print $4}')
+    echo "Avail          :" $(df -Th | grep "/" | awk '{print $5}')
     echo ''
     echo '##################################'
     echo '# Disk Space Information (/data) #'
@@ -696,23 +734,7 @@ function showSummaryInfo {
     echo "Used           :" $(df -Th | grep "/data" | awk '{print $4}')
     echo "Avail          :" $(df -Th | grep "/data" | awk '{print $5}')
     echo ''
-    echo '##################################'
-    echo '#    Block Number Information    #'
-    echo '##################################'
-    echo ''
-    local_shard_0=$(${HMY} blockchain latest-headers | jq '.["result"]["beacon-chain-header"]' | jq -r .number | xargs printf "%d\n")
-    local_shard_1=$(${HMY} blockchain latest-headers | jq '.["result"]["shard-chain-header"]' | jq -r .number | xargs printf "%d\n")
-
-    remote_shard_0=$(${HMY} blockchain latest-headers -n api.s0.t.hmny.io | jq '.["result"]["shard-chain-header"]' | jq -r .number | xargs printf "%d\n")
-    remote_shard_1=$(${HMY} blockchain latest-headers -n api.s1.t.hmny.io | jq '.["result"]["shard-chain-header"]' | jq -r .number | xargs printf "%d\n")
-
-    behind_shard_0="$((remote_shard_0-local_shard_0))"
-    behind_shard_1="$((remote_shard_1-local_shard_1))"
-
-    echo "local_shard_0 = $local_shard_0 | remote_shard_0 = $remote_shard_0 | different $behind_shard_0"
-    echo "local_shard_1 = $local_shard_1 | remote_shard_1 = $remote_shard_1 | different $behind_shard_1"
-
-    echo ''
+    waitForAnyKey
 }
 
 function showBlockNumber {
@@ -722,18 +744,20 @@ function showBlockNumber {
 }
 
 function showMetaData {
-    ./hmy utility metadata | grep current-block-number
+    ./hmy utility metadata
     waitForAnyKey
 }
 
 function showChainInfo {
-    ./hmy utility metadata | grep current-block-number
+    ./hmy utility metadata | grep -E "\"chain-id\"|current-epoch|current-block-number|shard-id"
     waitForAnyKey
 }
 
 function showNodeKey {
-    echo "node key"
+    echo "=================[ node key ]===================="
     cat ~/.hmy/blskeys/*.key
+    echo ''
+    echo '================================================='
     waitForAnyKey
 }
 
@@ -742,19 +766,28 @@ function showUbuntuRelease {
     waitForAnyKey
 }
 
+function showNetworkInfo {
+    ./hmy utility metadata | grep -E "network|shard-id|role|dns-zone|peerid|node-unix-start-time"
+    waitForAnyKey
+}
+
 function currentNode {
 
-    node_options=(1 "meta data"
+    node_options=(1 "all meta data"
                   2 "node key"
-                  3 "block number"
+                  3 "network info"
                   4 "chain info"
-                  5 "adjust sync method")
+                  5 "block number"
+                  6 "disk info"
+                  7 "OS info"
+                  8 "binaries info"
+                  9 "EC2 info")
 
     menu_result="done"
 
     while [ $menu_result == "done" ]
     do
-        selected_option=$(dialog --clear \
+        selected_node_option=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
                         --title "Current Node Options" \
                         --ok-label "Next" --cancel-label "Back" \
@@ -764,8 +797,7 @@ function currentNode {
                         2>&1 >/dev/tty)
         clear
 
-        echo "selected_option: $selected_option"
-        case $selected_option in
+        case $selected_node_option in
                 1)
                     showMetaData 
                     ;;
@@ -773,13 +805,25 @@ function currentNode {
                     showNodeKey
                     ;;
                 3)
-                    showBlockNumber
+                    showNetworkInfo
                     ;;
                 4)
                     showChainInfo
                     ;;
                 5)
-                    adjustSyncMethod
+                    showBlockInformation
+                    ;;
+                6)
+                    showDiskInfo
+                    ;;
+                7)
+                    showUbuntuRelease
+                    ;;
+                8)
+                    showBinariesInfo
+                    ;;
+                9)
+                    showEc2Info
                     ;;
                 *)
                     menu_result="back"
@@ -868,6 +912,49 @@ function harmonyService {
 }
 
 #========================================================================
+# Adjustments
+#========================================================================
+function revertBeacon {
+  REVERT_TO=26096624
+  REVERT_DO_BEFORE=26096625
+  sudo service harmony stop 
+  ./harmony --revert.beacon --revert.to $REVERT_TO --revert.do-before $REVERT_DO_BEFORE -c harmony.conf
+  sudo service harmony start
+}
+
+function adjustments {
+    adjustment_options=(1 "adjust sync method"
+                        2 "revert beacon")
+
+    menu_result="done"
+
+    while [ $menu_result == "done" ]
+    do
+        selected_adj=$(dialog --clear \
+                        --backtitle "$BACKTITLE" \
+                        --title "Trouble Shooting" \
+                        --menu "$MENU" \
+                        --ok-label "Next" --cancel-label "Back" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${adjustment_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+        case $selected_adj in
+                1)
+                    adjustSyncMethod
+                    ;;
+                2)
+                    echo "this feature is not completed yet, try again later"
+                    ;;
+                3)
+                    menu_result="back"
+                    ;;
+        esac
+
+    done
+}
+
+#========================================================================
 # Trouble shooting
 #========================================================================
 function fixNodeStuckBehindManyBlocks {
@@ -880,14 +967,28 @@ function fixNodeStuckBehindManyBlocks {
 
 function fixNotEnoughSigningPower {
     echo "issue: not enough signing power"
-    echo "solution: ..."
+    echo "solution: will be added soon"
     echo "done."
     waitForAnyKey
 }
 
 function fixStorageLimit {
     echo "issue: not enough signing power"
-    echo "solution: ..."
+    echo "solution: will be added soon"
+    echo "done."
+    waitForAnyKey
+}
+
+function fixP2POutOfMemory {
+    echo "issue: node using 100% memory because of mis-adjustment of p2p"
+    echo "solution: will be added soon"
+    echo "done."
+    waitForAnyKey
+}
+
+function fixBlockedByHetzner {
+    echo "issue: node keep getting blocked by hetzner"
+    echo "solution: will be added soon"
     echo "done."
     waitForAnyKey
 }
@@ -918,9 +1019,15 @@ function troubleShooting {
                     fixNotEnoughSigningPower
                     ;;
                 3)
-                    fixNtorageLimit
+                    fixStorageLimit
                     ;;
-                4)  
+                4)
+                    fixP2POutOfMemory
+                    ;;
+                6)
+                    fixBlockedByHetzner
+                    ;;
+                *)  
                     menu_result="back"
                     ;;
         esac
@@ -928,15 +1035,63 @@ function troubleShooting {
     done
 }
 
+
+#========================================================================
+# Logs and Profile 
+#========================================================================
+function showPprofProfile {
+    go tool pprof http://localhost:6060/debug/pprof/heap
+    waitForAnyKey
+}
+
+function showLogs {
+    tail -f latest/zero*.log
+    waitForAnyKey
+}
+
+function getProfileAndLogs {
+    pl_options=(1 "logs"
+                2 "prfofile")
+
+    menu_result="done"
+
+    while [ $menu_result == "done" ]
+    do
+        selected_pl=$(dialog --clear \
+                        --backtitle "$BACKTITLE" \
+                        --title "Logs and Profile" \
+                        --menu "$MENU" \
+                        --ok-label "Next" --cancel-label "Back" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${pl_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+        case $selected_pl in
+                1)
+                    showPprofProfile 
+                    ;;
+                2)
+                    showLogs
+                    ;;
+                *)  
+                    menu_result="back"
+        esac
+
+    done
+}
+
+
 #=========================================================================
 # MAIN MENU
 #=========================================================================
 function showMainMenu {
     options=(1 "install new node"
-             2 "current node"
-             3 "trouble shooting"
-             4 "harmony service"
-             5 "blockchain")
+             2 "current node info"
+             3 "adjustments"
+             4 "trouble shooting"
+             5 "logs and profile report (pprof)"
+             6 "harmony service"
+             7 "blockchain")
 
     main_menu_result="done"
 
@@ -963,12 +1118,18 @@ function showMainMenu {
                 currentNode
                 ;;
             3)
-                troubleShooting
+                adjustments
                 ;;
             4)
-                harmonyService
+                troubleShooting
                 ;;
             5)
+                getProfileAndLogs
+                ;;
+            6)
+                harmonyService
+                ;;
+            7)
                 blockchain
                 ;;
             *)
