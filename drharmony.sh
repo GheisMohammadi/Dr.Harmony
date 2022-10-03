@@ -199,6 +199,7 @@ function downloadAndBuildSourceCode {
     fi
     go mod tidy
     make
+    make linux_static
 }
 
 function buildHarmonyBinary {
@@ -933,8 +934,8 @@ function adjustments {
         selected_adj=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
                         --title "Trouble Shooting" \
-                        --menu "$MENU" \
                         --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
                         $HEIGHT $WIDTH $CHOICE_HEIGHT \
                         "${adjustment_options[@]}" \
                         2>&1 >/dev/tty)
@@ -994,9 +995,12 @@ function fixBlockedByHetzner {
 }
 
 function troubleShooting {
+
     issues=(1 "node stuck behind n blocks"
             2 "not enough signing power"
-            3 "storage limit")
+            3 "storage limit"
+            4 "p2p out of memory"
+            5 "node is blocked by provider")
 
     menu_result="done"
 
@@ -1005,11 +1009,12 @@ function troubleShooting {
         selected_issue=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
                         --title "Trouble Shooting" \
-                        --menu "$MENU" \
                         --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
                         $HEIGHT $WIDTH $CHOICE_HEIGHT \
                         "${issues[@]}" \
                         2>&1 >/dev/tty)
+
         clear
         case $selected_issue in
                 1)
@@ -1060,8 +1065,8 @@ function getProfileAndLogs {
         selected_pl=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
                         --title "Logs and Profile" \
-                        --menu "$MENU" \
                         --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
                         $HEIGHT $WIDTH $CHOICE_HEIGHT \
                         "${pl_options[@]}" \
                         2>&1 >/dev/tty)
@@ -1091,7 +1096,8 @@ function showMainMenu {
              4 "trouble shooting"
              5 "logs and profile report (pprof)"
              6 "harmony service"
-             7 "blockchain")
+             7 "blockchain"
+             8 "security")
 
     main_menu_result="done"
 
@@ -1131,6 +1137,10 @@ function showMainMenu {
                 ;;
             7)
                 blockchain
+                ;;
+            8)
+                echo "security options will be added later"
+                waitForAnyKey
                 ;;
             *)
                 main_menu_result="exit"
