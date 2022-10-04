@@ -317,21 +317,27 @@ function createSnapDB {
 # Blockchain & RPC
 #========================================================================
 function getTransactionsHistory {
+    exec 3>&1;
+    accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
     curl --location --request POST 'https://api.s0.t.hmny.io/' \
     --header 'Content-Type: application/json' \
-    --data-raw '{
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "hmyv2_getTransactionsHistory",
-        "params": [{
-            "address": "one1xg9nlmd67ks444g0tshlffjeeaxmvjczjh3n00",
-            "pageIndex": 0,
-            "pageSize": 1000,
-            "fullTx": true,
-            "txType": "ALL",
-            "order": "DESC"
+    --data-raw "{
+        \"jsonrpc\": "2.0",
+        \"id\": 1,
+        \"method\": \"hmyv2_getTransactionsHistory\",
+        \"params\": [{
+            \"address\": \"$accAddress\",
+            \"pageIndex\": 0,
+            \"pageSize\": 1000,
+            \"fullTx\": true,
+            \"txType\": \"ALL\",
+            \"order\": \"DESC\"
         }]
-    }'
+    }"
+    waitForAnyKey
 }
 
 # sample result
@@ -340,6 +346,7 @@ function hmy_getBalance {
     ADD="0x320b3FedBaF5A15Ad50F5c2ff4A659cf4dB64B02"
     URL="http://localhost:9501"
     curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBalance\",\"params\":[\"${ADD}\", \"latest\"],\"id\":1}"
+    waitForAnyKey
 }
 
 function eth_getBalance {
@@ -351,6 +358,45 @@ function eth_getBalance {
         "method": "eth_getBalance",
         "params": ["0x320b3FedBaF5A15Ad50F5c2ff4A659cf4dB64B02", "latest"]
     }'
+    waitForAnyKey
+}
+
+function blockchain {
+
+    blockchain_options=(1 "account transactions history"
+                        2 "check account balance"
+                        3 "eth get balance")
+
+    menu_result="done"
+
+    while [ $menu_result == "done" ]
+    do
+        selected_bc_option=$(dialog --clear \
+                    --backtitle "$BACKTITLE" \
+                    --title "Sync Method" \
+                    --ok-label "Next" --cancel-label "Back" \
+                    --menu "$MENU" \
+                    $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                    "${blockchain_options[@]}" \
+                    2>&1 >/dev/tty)
+        
+        clear
+        menu_result="done"
+        
+        case $selected_bc_option in
+            1)
+                getTransactionsHistory 
+                ;;
+            2)
+                hmy_getBalance
+                ;;
+            3)
+                eth_getBalance
+                ;;
+            *)  
+                menu_result="back"
+        esac
+    done
 }
 #========================================================================
 # rclone
@@ -1058,7 +1104,7 @@ function troubleShooting {
                 4)
                     fixP2POutOfMemory
                     ;;
-                6)
+                5)
                     fixBlockedByHetzner
                     ;;
                 *)  
@@ -1102,10 +1148,10 @@ function getProfileAndLogs {
         clear
         case $selected_pl in
                 1)
-                    showPprofProfile 
+                    showLogs
                     ;;
                 2)
-                    showLogs
+                    showPprofProfile
                     ;;
                 *)  
                     menu_result="back"
