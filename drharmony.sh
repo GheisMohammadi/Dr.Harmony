@@ -686,6 +686,16 @@ function showBinariesInfo {
 }
 
 function showBlockInformation {
+    HMY=$(which hmy)
+    if [ -z HMY ]; then
+        HMY=/usr/sbin/hmy
+    fi
+
+    HARMONY=$(which harmony)
+    if [ -z HARMONY ]; then
+        HARMONY=/usr/sbin/harmony
+    fi
+
     echo '##################################'
     echo '#    Block Number Information    #'
     echo '##################################'
@@ -772,6 +782,17 @@ function showNetworkInfo {
     waitForAnyKey
 }
 
+function showHeaders {
+    while true; do ./hmy blockchain latest-headers ; sleep 1; done
+    waitForAnyKey
+}
+
+function showFullHardwareInfo {
+    sudo apt-get install lshw
+    sudo lshw -short 
+    waitForAnyKey
+}
+
 function currentNode {
 
     node_options=(1 "all meta data"
@@ -779,10 +800,12 @@ function currentNode {
                   3 "network info"
                   4 "chain info"
                   5 "block number"
-                  6 "disk info"
-                  7 "OS info"
-                  8 "binaries info"
-                  9 "EC2 info")
+                  6 "headers"
+                  7 "disk info"
+                  8 "OS info"
+                  9 "binaries info"
+                  10 "EC2 info"
+                  11 "Full hardware info")
 
     menu_result="done"
 
@@ -815,16 +838,22 @@ function currentNode {
                     showBlockInformation
                     ;;
                 6)
-                    showDiskInfo
+                    showHeaders
                     ;;
                 7)
-                    showUbuntuRelease
+                    showDiskInfo
                     ;;
                 8)
-                    showBinariesInfo
+                    showUbuntuRelease
                     ;;
                 9)
+                    showBinariesInfo
+                    ;;
+                10)
                     showEc2Info
+                    ;;
+                11)
+                    showFullHardwareInfo
                     ;;
                 *)
                     menu_result="back"
