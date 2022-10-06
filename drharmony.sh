@@ -1131,9 +1131,8 @@ function adjustments {
                 2)
                     echo "this feature is not completed yet, try again later"
                     ;;
-                3)
+                *)
                     adjustments_menu_result="back"
-                    ;;
         esac
 
     done
@@ -1224,7 +1223,15 @@ function troubleShooting {
     done
 }
 
+#========================================================================
+# Inspect 
+#========================================================================
 
+function inspect {
+    echo "inspecting health and security"
+    echo "the inspect menu will be added later"
+    waitForAnyKey
+}
 #========================================================================
 # Logs and Profile 
 #========================================================================
@@ -1275,13 +1282,14 @@ function getProfileAndLogs {
 #=========================================================================
 function showMainMenu {
     options=(1 "install new node"
-             2 "current node monitor and info"
+             2 "monitor and info"
              3 "adjustments"
-             4 "trouble shooting"
-             5 "logs and profile report (pprof)"
-             6 "harmony service"
-             7 "blockchain"
-             8 "security")
+             4 "inspect"
+             5 "trouble shooting"
+             6 "logs and profile report (pprof)"
+             7 "harmony service"
+             8 "blockchain"
+             9 "security")
 
     main_menu_result="done"
 
@@ -1311,18 +1319,21 @@ function showMainMenu {
                 adjustments
                 ;;
             4)
-                troubleShooting
+                inspect 
                 ;;
             5)
-                getProfileAndLogs
+                troubleShooting
                 ;;
             6)
-                harmonyService
+                getProfileAndLogs
                 ;;
             7)
-                blockchain
+                harmonyService
                 ;;
             8)
+                blockchain
+                ;;
+            9)
                 echo "security options will be added later"
                 waitForAnyKey
                 ;;
