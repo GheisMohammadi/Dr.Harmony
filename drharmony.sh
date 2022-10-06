@@ -57,7 +57,7 @@ function checkRequirements {
     #APT_OK=$(dpkg-query -W --showformat='${Status}\n' apt|grep "install ok installed")
     #YUM_OK=$(dpkg-query -W --showformat='${Status}\n' yum|grep "install ok installed")
     if [ -z "$(command -v $REQUIRED_PKG)" ]; then
-        if [ -n "$(command -v apt)" ]; then
+        if [ -n "$(command -v apt-get)" ]; then
             echo "installing $REQUIRED_PKG (apt) ..."
             sudo apt-get -y update
             sudo apt-get install -y $REQUIRED_PKG
@@ -145,7 +145,7 @@ function installHarmonyDependenciesUsingYum {
     sudo yum install -y git glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
 }
 
-function installHarmonyDependenciesUsingBrew{
+function installHarmonyDependenciesUsingBrew {
     brew install gmp
     brew install openssl
     sudo ln -sf /usr/local/opt/openssl@1.1 /usr/local/opt/openssl
