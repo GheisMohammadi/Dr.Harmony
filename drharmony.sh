@@ -281,7 +281,7 @@ function installNewNode {
                     "${install_options[@]}" \
                     2>&1 >/dev/tty)
     clear
-    res="done"
+    new_node_menu_res="done"
     
     # ask user for network type
     askForNetwork
@@ -297,11 +297,11 @@ function installNewNode {
                 install_rclone
                 ;;
             *)
-                res="back"
+                new_node_menu_res="back"
                 ;;
     esac
 
-    if [ $res == "done" ]; then
+    if [ $new_node_menu_res == "done" ]; then
         waitForAnyKey
     fi
 }
@@ -367,9 +367,9 @@ function blockchain {
                         2 "check account balance"
                         3 "eth get balance")
 
-    menu_result="done"
+    blockchain_menu_result="done"
 
-    while [ $menu_result == "done" ]
+    while [ $blockchain_menu_result == "done" ]
     do
         selected_bc_option=$(dialog --clear \
                     --backtitle "$BACKTITLE" \
@@ -381,7 +381,6 @@ function blockchain {
                     2>&1 >/dev/tty)
         
         clear
-        menu_result="done"
         
         case $selected_bc_option in
             1)
@@ -394,7 +393,7 @@ function blockchain {
                 eth_getBalance
                 ;;
             *)  
-                menu_result="back"
+                blockchain_menu_result="back"
         esac
     done
 }
@@ -686,7 +685,7 @@ function adjustSyncMethod {
                     "${sync_options[@]}" \
                     2>&1 >/dev/tty)
     clear
-    res="done"
+    sync_method_menu_res="done"
     case $selected_sync_option in
             1)
                 disableStagedSync 
@@ -695,11 +694,11 @@ function adjustSyncMethod {
                 enableStagedSync
                 ;;
             *)
-                res="back"
+                sync_method_menu_res="back"
                 ;;
     esac
 
-    if [ $res == "done" ]; then
+    if [ $sync_method_menu_res == "done" ]; then
         waitForAnyKey
     fi
 }
@@ -839,9 +838,9 @@ function showFullHardwareInfo {
     waitForAnyKey
 }
 
-function currentNode {
+function nodeInfo {
 
-    node_options=(1 "all meta data"
+    node_info_options=(1 "all meta data"
                   2 "node key"
                   3 "network info"
                   4 "chain info"
@@ -853,17 +852,17 @@ function currentNode {
                   10 "EC2 info"
                   11 "Full hardware info")
 
-    menu_result="done"
+    info_menu_result="done"
 
-    while [ $menu_result == "done" ]
+    while [ $info_menu_result == "done" ]
     do
         selected_node_option=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
-                        --title "Current Node Options" \
+                        --title "Current Node Info" \
                         --ok-label "Next" --cancel-label "Back" \
                         --menu "$MENU" \
                         $HEIGHT $WIDTH $CHOICE_HEIGHT \
-                        "${node_options[@]}" \
+                        "${node_info_options[@]}" \
                         2>&1 >/dev/tty)
         clear
 
@@ -902,8 +901,79 @@ function currentNode {
                     showFullHardwareInfo
                     ;;
                 *)
-                    menu_result="back"
+                    info_menu_result="back"
                     ;;
+        esac
+
+    done
+}
+
+function nodeWatch {
+ 
+    node_watch_options=(1 "memory usage"
+                        2 "cpu usage"
+                        3 "block number")
+
+    node_watch_menu_result="done"
+
+    while [ $node_watch_menu_result == "done" ]
+    do
+        selected_watch_option=$(dialog --clear \
+                        --backtitle "$BACKTITLE" \
+                        --title "Node Watch Options" \
+                        --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${node_watch_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+
+        case $selected_watch_option in
+                1)
+                    watch -n 5 free -m 
+                    ;;
+                2)
+                    sudo systemctl status harmony
+                    ;;
+                3)
+                    while true; do ./hmy utility metadata | grep current-block-number; sleep 2; clear; done
+                    ;;
+                *)
+                    node_watch_menu_result="back"
+                    ;;
+        esac
+
+    done
+}
+
+function currentNode {
+
+    node_options=(1 "metadata and info"
+                  2 "watch")
+
+    current_node_menu_result="done"
+
+    while [ $current_node_menu_result == "done" ]
+    do
+        selected_node_option=$(dialog --clear \
+                        --backtitle "$BACKTITLE" \
+                        --title "Current Node Options" \
+                        --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${node_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+
+        case $selected_node_option in
+                1)
+                    nodeInfo 
+                    ;;
+                2)
+                    nodeWatch
+                    ;;
+                *)
+                    current_node_menu_result="back"
         esac
 
     done
@@ -950,9 +1020,9 @@ function harmonyService {
             4 "stop"
             5 "logs")
 
-    menu_result="done"
+    service_menu_result="done"
 
-    while [ $menu_result == "done" ]
+    while [ $service_menu_result == "done" ]
     do
         selected_service_option=$(dialog --clear \
                         --backtitle "Harmony Service" \
@@ -980,7 +1050,7 @@ function harmonyService {
                     serviceLogs
                     ;;
                 *)
-                    menu_result="back"
+                    service_menu_result="back"
                     ;;
         esac
 
@@ -1002,9 +1072,9 @@ function adjustments {
     adjustment_options=(1 "adjust sync method"
                         2 "revert beacon")
 
-    menu_result="done"
+    adjustments_menu_result="done"
 
-    while [ $menu_result == "done" ]
+    while [ $adjustments_menu_result == "done" ]
     do
         selected_adj=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
@@ -1023,7 +1093,7 @@ function adjustments {
                     echo "this feature is not completed yet, try again later"
                     ;;
                 3)
-                    menu_result="back"
+                    adjustments_menu_result="back"
                     ;;
         esac
 
@@ -1077,9 +1147,9 @@ function troubleShooting {
             4 "p2p out of memory"
             5 "node is blocked by provider")
 
-    menu_result="done"
+    troubleShooting_menu_result="done"
 
-    while [ $menu_result == "done" ]
+    while [ $troubleShooting_menu_result == "done" ]
     do
         selected_issue=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
@@ -1108,7 +1178,7 @@ function troubleShooting {
                     fixBlockedByHetzner
                     ;;
                 *)  
-                    menu_result="back"
+                    troubleShooting_menu_result="back"
                     ;;
         esac
 
@@ -1133,9 +1203,9 @@ function getProfileAndLogs {
     pl_options=(1 "logs"
                 2 "prfofile")
 
-    menu_result="done"
+    profile_menu_result="done"
 
-    while [ $menu_result == "done" ]
+    while [ $profile_menu_result == "done" ]
     do
         selected_pl=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
@@ -1154,7 +1224,7 @@ function getProfileAndLogs {
                     showPprofProfile
                     ;;
                 *)  
-                    menu_result="back"
+                    profile_menu_result="back"
         esac
 
     done
@@ -1166,7 +1236,7 @@ function getProfileAndLogs {
 #=========================================================================
 function showMainMenu {
     options=(1 "install new node"
-             2 "current node info"
+             2 "current node monitor and info"
              3 "adjustments"
              4 "trouble shooting"
              5 "logs and profile report (pprof)"
