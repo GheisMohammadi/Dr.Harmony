@@ -65,8 +65,12 @@ function checkRequirements {
             echo "installing $REQUIRED_PKG (yum) ..."
             sudo yum -y update
             sudo yum install -y $REQUIRED_PKG
+        elif [ -n "$(command -v brew)" ]; then
+            echo "installing $REQUIRED_PKG (brew) ..."
+            sudo brew -y update
+            sudo brew install -y $REQUIRED_PKG
         else 
-            echo "install dependencies failed"
+            echo "install dependencies failed, it needs either apt, yum or brew"
         fi
     fi
 
@@ -137,8 +141,14 @@ function installHarmonyDependenciesUsingApt {
     sudo apt install -y git libgmp-dev  libssl-dev  make gcc g++
 }
 
-function installHarmonyDependenciesInAWS {
+function installHarmonyDependenciesUsingYum {
     sudo yum install -y git glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
+}
+
+function installHarmonyDependenciesUsingBrew{
+    brew install gmp
+    brew install openssl
+    sudo ln -sf /usr/local/opt/openssl@1.1 /usr/local/opt/openssl
 }
 
 function installHarmonyDependencies {
@@ -149,9 +159,12 @@ function installHarmonyDependencies {
         installHarmonyDependenciesUsingApt
     elif [ -n "$(command -v yum)" ]; then
         echo "installing dependencies (yum) ..."
-        installHarmonyDependenciesInAWS
+        installHarmonyDependenciesUsingYum
+    elif [ -n "$(command -v brew)" ]; then
+        echo "installing dependencies (brew) ..."
+        installHarmonyDependenciesUsingBrew
     else 
-        echo "install dependencies failed"
+        echo "install dependencies failed, it needs either apt, yum or brew"
     fi
 }
 
