@@ -12,6 +12,8 @@ cat << "EOF"
                                                    |___/
 EOF
 
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+PUBLIC_IP=$(dig @resolver3.opendns.com myip.opendns.com +short)
 HEIGHT=22
 WIDTH=40
 CHOICE_HEIGHT=10
@@ -386,7 +388,7 @@ function blockchain {
     do
         selected_bc_option=$(dialog --clear \
                     --backtitle "$BACKTITLE" \
-                    --title "Sync Method" \
+                    --title "blockchain info" \
                     --ok-label "Next" --cancel-label "Back" \
                     --menu "$MENU" \
                     $HEIGHT $WIDTH $CHOICE_HEIGHT \
@@ -649,7 +651,7 @@ function install_rclone {
 #========================================================================
 # Enable StagedSync
 #========================================================================
-function enableStagedSync {
+function enableStagedDNSSync {
     configFile="./harmony.conf"
     stagedsync=$(cat $configFile | grep "StagedSync =\|StagedSync=")
     if [[ -z $stagedsync ]]
@@ -665,9 +667,11 @@ function enableStagedSync {
     else
         echo "staged sync already enabled"
     fi
+
+    waitForAnyKey
 }
 
-function disableStagedSync {
+function disableStagedDNSSync {
     configFile="./harmony.conf"
     stagedsync=$(cat $configFile | grep "StagedSync =\|StagedSync=")
     if [[ -z $stagedsync ]]
@@ -683,37 +687,57 @@ function disableStagedSync {
     else
         echo "staged sync already disabled"
     fi
+
+    waitForAnyKey
+}
+
+function enableLegacyStreamSync {
+    # TODO: enable legacy stream sync (not completed yet)
+    waitForAnyKey
+}
+
+function enableStagedStreamSync {
+    # TODO: enable staged stream sync (not completed yet)
+    waitForAnyKey
 }
 
 function adjustSyncMethod {
-    sync_options=(1 "enable legacy sync"
-                  2 "enable staged sync")
+    sync_options=(1 "enable DNS legacy sync"
+                  2 "enable staged DNS sync"
+                  3 "enable stream sync"
+                  4 "enable staged stream sync")
 
-    selected_sync_option=$(dialog --clear \
-                    --backtitle "$BACKTITLE" \
-                    --title "Sync Method" \
-                    --ok-label "Apply" --cancel-label "Back" \
-                    --menu "$MENU" \
-                    $HEIGHT $WIDTH $CHOICE_HEIGHT \
-                    "${sync_options[@]}" \
-                    2>&1 >/dev/tty)
-    clear
-    sync_method_menu_res="done"
-    case $selected_sync_option in
-            1)
-                disableStagedSync 
-                ;;
-            2)
-                enableStagedSync
-                ;;
-            *)
-                sync_method_menu_res="back"
-                ;;
-    esac
+    sync_menu_result="done"
 
-    if [ $sync_method_menu_res == "done" ]; then
-        waitForAnyKey
-    fi
+    while [ $sync_menu_result == "done" ]
+    do
+        selected_sync_option=$(dialog --clear \
+                        --backtitle "$BACKTITLE" \
+                        --title "Sync Method" \
+                        --ok-label "Apply" --cancel-label "Back" \
+                        --menu "$MENU" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${sync_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+        case $selected_sync_option in
+                1)
+                    disableStagedDNSSync 
+                    ;;
+                2)
+                    enableStagedDNSSync
+                    ;;
+                3)
+                    enableLegacyStreamSync
+                    ;;
+                4)
+                    enableStagedStreamSync
+                    ;;
+                *)
+                    sync_menu_result="back"
+                    ;;
+        esac
+    done
 }
 
 #========================================================================
@@ -836,6 +860,8 @@ function showUbuntuRelease {
 }
 
 function showNetworkInfo {
+    echo "node public ip address: $PUBLIC_IP"
+    echo "node local ip address: $LOCAL_IP"
     ./hmy utility metadata | grep -E "network|shard-id|role|dns-zone|peerid|node-unix-start-time"
     waitForAnyKey
 }
@@ -972,7 +998,7 @@ function currentNode {
                         --backtitle "$BACKTITLE" \
                         --title "Current Node Options" \
                         --ok-label "Next" --cancel-label "Back" \
-                        --menu "$MENU" \
+                        --menu "Node IP: $PUBLIC_IP\nSelect node option" \
                         $HEIGHT $WIDTH $CHOICE_HEIGHT \
                         "${node_options[@]}" \
                         2>&1 >/dev/tty)
@@ -1091,7 +1117,7 @@ function adjustments {
     do
         selected_adj=$(dialog --clear \
                         --backtitle "$BACKTITLE" \
-                        --title "Trouble Shooting" \
+                        --title "Adjustments" \
                         --ok-label "Next" --cancel-label "Back" \
                         --menu "$MENU" \
                         $HEIGHT $WIDTH $CHOICE_HEIGHT \
