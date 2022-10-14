@@ -20,6 +20,44 @@ CHOICE_HEIGHT=10
 BACKTITLE="Harmony Node Utilities - Dr.Harmony-V$DrHarmony_Version"
 MENU="Choose one of the following options:"
 menu_result="notready"
+
+#========================================================================
+# init binaries
+#========================================================================
+HMY=$(which hmy)
+if [ -z "$HMY" ]; then
+    HMY=./hmy
+    if [[ ! -f "$HMY" ]]; then
+        HMY=/usr/sbin/hmy
+        if [[ ! -f "$HMY" ]]; then
+            HMY=~/hmy
+            if [[ ! -f "$HMY" ]]; then
+                # hmy is not installed
+                HMY=""
+                echo "hmy not found."
+            fi
+        fi
+    fi
+fi
+
+
+HARMONY=$(which harmony)
+if [ -z "$HARMONY" ]; then
+    HARMONY=./harmony
+    if [[ ! -f "$HARMONY" ]]; then
+        HARMONY=/usr/sbin/harmony
+        if [[ ! -f "$HARMONY" ]]; then
+            HARMONY=~/harmony
+            if [[ ! -f "$HARMONY" ]]; then
+                # harmony is not installed
+                HARMONY=""
+                echo "harmony not found."
+            fi
+        fi
+    fi
+fi
+
+
 #========================================================================
 # User Inputs
 #========================================================================
@@ -76,26 +114,31 @@ function checkRequirements {
         fi
     fi
 
-    if [ -f "hmy" ]; then
+    if [ -f "$HMY" ]; then
         echo "hmy command is ready"
     else
         unameOut="$(uname -s)"
         case "${unameOut}" in
             Linux*)     #machine=Linux
                 curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
+                HMY=./hmy
                 ;;
             Darwin*)    #machine=Mac
                 curl -O https://raw.githubusercontent.com/harmony-one/go-sdk/master/scripts/hmy.sh
                 chmod u+x hmy.sh
                 ./hmy.sh -d
+                HMY=./hmy
                 ;;
             CYGWIN*)    #machine=Cygwin
                 curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
+                HMY=./hmy
                 ;;
             MINGW*)     #machine=MinGw
                 curl -LO https://harmony.one/hmycli && mv hmycli hmy && chmod +x hmy
+                HMY=./hmy
                 ;;
             *)          
+                HMY=""
                 machine="UNKNOWN:${unameOut}"
                 echo "not supported os ($machine)!"
         esac
@@ -744,40 +787,20 @@ function adjustSyncMethod {
 # Info
 #========================================================================
 function showBinariesInfo {
-    HMY=$(which hmy)
-    if [ -z HMY ]; then
-        HMY=/usr/sbin/hmy
-    fi
-
-    HARMONY=$(which harmony)
-    if [ -z HARMONY ]; then
-        HARMONY=/usr/sbin/harmony
-    fi
-
     echo ''
     echo '#################################'
     echo '#  Harmony One CLI Information  #'
     echo '#################################'
     echo ''
     echo "hmy cli     :" ${HMY}
-    ${HMY} version
+    $HMY version
     echo ''
     echo "harmony cli :" ${HARMONY}
-    ${HARMONY} version
+    $HARMONY version
     waitForAnyKey
 }
 
 function showBlockInformation {
-    HMY=$(which hmy)
-    if [ -z HMY ]; then
-        HMY=/usr/sbin/hmy
-    fi
-
-    HARMONY=$(which harmony)
-    if [ -z HARMONY ]; then
-        HARMONY=/usr/sbin/harmony
-    fi
-
     echo '##################################'
     echo '#    Block Number Information    #'
     echo '##################################'
@@ -832,17 +855,17 @@ function showDiskInfo {
 
 function showBlockNumber {
     echo "current block number:"
-    ./hmy utility metadata | grep current-block-number
+    $HMY utility metadata | grep current-block-number
     waitForAnyKey
 }
 
 function showMetaData {
-    ./hmy utility metadata
+    $HMY utility metadata
     waitForAnyKey
 }
 
 function showChainInfo {
-    ./hmy utility metadata | grep -E "\"chain-id\"|current-epoch|current-block-number|shard-id"
+    $HMY utility metadata | grep -E "\"chain-id\"|current-epoch|current-block-number|shard-id"
     waitForAnyKey
 }
 
@@ -862,12 +885,12 @@ function showUbuntuRelease {
 function showNetworkInfo {
     echo "node public ip address: $PUBLIC_IP"
     echo "node local ip address: $LOCAL_IP"
-    ./hmy utility metadata | grep -E "network|shard-id|role|dns-zone|peerid|node-unix-start-time"
+    $HMY utility metadata | grep -E "network|shard-id|role|dns-zone|peerid|node-unix-start-time"
     waitForAnyKey
 }
 
 function showHeaders {
-    while true; do ./hmy blockchain latest-headers ; sleep 1; done
+    while true; do $HMY blockchain latest-headers ; sleep 1; done
     waitForAnyKey
 }
 
@@ -975,7 +998,7 @@ function nodeWatch {
                     sudo systemctl status harmony
                     ;;
                 3)
-                    while true; do ./hmy utility metadata | grep current-block-number; sleep 2; clear; done
+                    while true; do $HMY utility metadata | grep current-block-number; sleep 2; clear; done
                     ;;
                 *)
                     node_watch_menu_result="back"
