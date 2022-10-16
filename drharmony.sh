@@ -42,15 +42,20 @@ fi
 
 
 HARMONY=$(which harmony)
+LOGS_DIR=""
 if [ -z "$HARMONY" ]; then
     HARMONY=./harmony
+    LOGS_DIR="./latest"
     if [[ ! -f "$HARMONY" ]]; then
         HARMONY=/usr/sbin/harmony
+        LOGS_DIR="./usr/sbin"
         if [[ ! -f "$HARMONY" ]]; then
             HARMONY=~/harmony
+            LOGS_DIR="~"
             if [[ ! -f "$HARMONY" ]]; then
                 # harmony is not installed
                 HARMONY=""
+                LOGS_DIR=""
                 echo "harmony not found."
             fi
         fi
@@ -696,13 +701,13 @@ function install_rclone {
 #========================================================================
 function enableStagedDNSSync {
     configFile="./harmony.conf"
-    stagedsync=$(cat $configFile | grep "StagedSync =\|StagedSync=")
+    stagedsync=$(cat $configFile 2>/dev/null | grep "StagedSync =\|StagedSync=")
     if [[ -z $stagedsync ]]
     then
     ./harmony config update $configFile
     fi
     
-    newstagedsync=$(cat $configFile | grep "StagedSync =\|StagedSync=")
+    newstagedsync=$(cat $configFile 2>/dev/null | grep "StagedSync =\|StagedSync=")
     if [[ $newstagedsync =~ "false" ]]; then
         stgstr='\bStagedSync[ \t]*=[ \t]*false\b'
         sed -i "s|$stgstr|StagedSync = true|g" $configFile
@@ -716,13 +721,13 @@ function enableStagedDNSSync {
 
 function disableStagedDNSSync {
     configFile="./harmony.conf"
-    stagedsync=$(cat $configFile | grep "StagedSync =\|StagedSync=")
+    stagedsync=$(cat $configFile 2>/dev/null | grep "StagedSync =\|StagedSync=")
     if [[ -z $stagedsync ]]
     then
     ./harmony config update $configFile
     fi
 
-    newstagedsync=$(cat $configFile | grep "StagedSync =\|StagedSync=")
+    newstagedsync=$(cat $configFile 2>/dev/null | grep "StagedSync =\|StagedSync=")
     if [[ $newstagedsync =~ "true" ]]; then
         stgstr='\bStagedSync[ \t]*=[ \t]*true\b'
         sed -i "s|$stgstr|StagedSync = false|g" $configFile
@@ -792,10 +797,10 @@ function showBinariesInfo {
     echo '#  Harmony One CLI Information  #'
     echo '#################################'
     echo ''
-    echo "hmy cli     :" ${HMY}
+    echo "hmy cli path: " ${HMY}
     $HMY version
     echo ''
-    echo "harmony cli :" ${HARMONY}
+    echo "harmony binary path: " ${HARMONY}
     $HARMONY version
     waitForAnyKey
 }
@@ -1253,6 +1258,68 @@ function troubleShooting {
 function inspect {
     echo "inspecting health and security"
     echo "the inspect menu will be added later"
+
+    #how many errors in logs
+    #how many syncing errors in logs
+    if [ -f "${LOGS_DIR}/zerolog-harmony.log" ]; then
+        n_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -c "error")
+        if [ -z n_errors ]; then
+        echo "[OK] errors in log"
+        else 
+        echo "[X]  errors in log"
+        fi
+
+        n_staged_sync_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -E "error" | grep -c "STAGED_SYNC" )
+        if [ -z n_staged_sync_errors ]; then
+        echo "[OK] staged sync errors in log"
+        else 
+        echo "[X]  staged sync errors in log"
+        fi
+    else
+        echo "[X] checking errors in logs failed (log file not found)"
+        echo "[X] checking staged sync logs failed (log file not found)"
+    fi
+    #how many errors today
+    
+    #how many errors in service logs
+    service_status=$(systemctl status harmony.service 2>/dev/null | grep -c "active (running)")
+    if [ ! -z $service_errors ]; then
+        service_errors=$(journalctl -u harmony.service --no-pager -n 1000 | grep -c "error")
+        if [ -z service_errors ]; then
+        echo "[OK] service is running ok"
+        else 
+        echo "[X]  service got some errors in log"
+        fi
+    else
+        echo "[X] service is not running"
+    fi
+
+    #too many log files
+    num_archived_log_files=$(ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
+    if [ "$num_archived_log_files" -gt 10 ]; then
+        echo "[X] archived logs count" 
+    else
+        echo "[OK] archived logs count"
+    fi
+
+    #ufw status
+    ufw_status=$(sudo ufw status 2>/dev/null | grep "Status: active")
+    if [ -z $ufw_status ]; then
+        echo "[OK] firewall status "
+    else
+        echo "[X] firewall status "
+    fi
+
+    #open ports
+    #check pprof is healthy
+    #status of harmony service
+    #disk usage
+    #cpu usage
+    #ram usage
+    #block is behind 
+    #service respond time -> send simple query and check time
+    #number of connection to other nodes
+
     waitForAnyKey
 }
 #========================================================================
