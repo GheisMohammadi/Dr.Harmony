@@ -385,7 +385,7 @@ function getTransactionsHistory {
     exitcode=$?;
     exec 3>&-;
 
-    curl --location --request POST 'https://api.s0.t.hmny.io/' \
+    curl --location --request POST  '0.0.0.0:9500' \
     --header 'Content-Type: application/json' \
     --data-raw "{
         \"jsonrpc\": "2.0",
@@ -405,26 +405,26 @@ function getTransactionsHistory {
 
 # sample result
 # {"jsonrpc":"2.0","id":1,"result":"0x0"}
-function hmy_getBalance {
+function hmyGetBalance {
     exec 3>&1;
     accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
     ADDR="0x320b3FedBaF5A15Ad50F5c2ff4A659cf4dB64B02"
-    URL="http://localhost:9501"
+    URL="0.0.0.0:9500"
     curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBalance\",\"params\":[\"${accAddress}\", \"latest\"],\"id\":1}"
     
     waitForAnyKey
 }
 
-function eth_getBalance {
+function ethGetBalance {
     exec 3>&1;
     accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
-    curl --location --request POST 'https://api.s0.t.hmny.io' \
+    curl --location --request POST '0.0.0.0:9500' \
     --header 'Content-Type: application/json' \
     --data-raw "{
         \"jsonrpc\": \"2.0\",
@@ -436,11 +436,23 @@ function eth_getBalance {
     waitForAnyKey
 }
 
+function showGasPrice {
+    curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmy_gasPrice",
+        "params":[],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST  '0.0.0.0:9500'
+
+    waitForAnyKey
+}
+
 function blockchain {
 
     blockchain_options=(1 "account transactions history"
                         2 "check account balance"
-                        3 "eth get balance")
+                        3 "eth get balance"
+                        4 "gas price")
 
     blockchain_menu_result="done"
 
@@ -462,10 +474,13 @@ function blockchain {
                 getTransactionsHistory 
                 ;;
             2)
-                hmy_getBalance
+                hmyGetBalance
                 ;;
             3)
-                eth_getBalance
+                ethGetBalance
+                ;;
+            4)
+                showGasPrice
                 ;;
             *)  
                 blockchain_menu_result="back"
@@ -1439,7 +1454,28 @@ function showPprofProfile {
 }
 
 function showLogs {
-    tail -f latest/zero*.log
+    exec 3>&1;
+    included=$(dialog --nocancel --ok-label "Next" --inputbox "words should be included (ex: wrd1|wrd2|..." 0 0 "" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    exec 3>&1;
+    n_lines=$(dialog --nocancel --ok-label "Next" --inputbox "how many lines? (0=all)" 0 0 "0" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    lines_flag=""
+    if [ "$n_lines" != "0" ]; then
+        lines_flag="-n $n_lines"
+    else
+
+
+    if [ -z "$included" ]; then
+        tail $lines_flag -f latest/zero*.log
+    else
+        tail $lines_flag -f latest/zero*.log | grep $included
+    else
+    
     waitForAnyKey
 }
 
