@@ -1467,14 +1467,14 @@ function showLogs {
     lines_flag=""
     if [ "$n_lines" != "0" ]; then
         lines_flag="-n $n_lines"
-    else
+    fi
 
 
     if [ -z "$included" ]; then
         tail $lines_flag -f latest/zero*.log
     else
         tail $lines_flag -f latest/zero*.log | grep $included
-    else
+    fi
     
     waitForAnyKey
 }
