@@ -1254,6 +1254,10 @@ function troubleShooting {
 #========================================================================
 # Inspect 
 #========================================================================
+function compareFloats {
+    comp_res=$(awk 'BEGIN { print ($n1 >= $n2) ? "YES" : "NO" }')
+    echo $comp_res
+}
 
 function inspect {
     echo "inspecting health and security"
@@ -1276,8 +1280,8 @@ function inspect {
         echo "[X]  staged sync errors in log [ there are ${n_errors} staged sync errors in log file ]"
         fi
     else
-        echo "[X] errors in log [ checking errors in logs failed (log file not found) ]"
-        echo "[X] errors in log [ checking staged sync logs failed (log file not found) ]"
+        echo "[X]  errors in log [ checking errors in logs failed (log file not found) ]"
+        echo "[X]  errors in log [ checking staged sync logs failed (log file not found) ]"
     fi
     #how many errors today
     
@@ -1291,13 +1295,13 @@ function inspect {
         echo "[X]  harmony service status [ got ${service_errors} errors in log ]"
         fi
     else
-        echo "[X] harmony service status [ is not running ]"
+        echo "[X]  harmony service status [ is not running ]"
     fi
 
     #too many log files
     num_archived_log_files=$(ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
     if [ "$num_archived_log_files" -gt 10 ]; then
-        echo "[X] archived logs count [ too many archived logs ]" 
+        echo "[X]  archived logs count [ too many archived logs ]" 
     else
         echo "[OK] archived logs count"
     fi
@@ -1316,13 +1320,13 @@ function inspect {
             echo "[OK] it seems firewall ports are not set properly"
         fi
     else
-        echo "[X] firewall status [ firewall is not active ]"
+        echo "[X]  firewall status [ firewall is not active ]"
     fi
 
     #open ports
     num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
     if [ "$num_archived_log_files" -gt 1 ]; then
-        echo "[X] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
+        echo "[X]  open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
         echo "[OK] open ports"
     fi
@@ -1332,35 +1336,38 @@ function inspect {
     if [ "$num_archived_log_files" -gt 1 ]; then
         echo "[OK] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
-        echo "[X] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]"
+        echo "[X]  pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]"
     fi
 
     #disk usage
-    total_disk_usage = $(df -h --total | grep total | awk '{ print $5}')
+    total_disk_usage=$(df -h --total | grep total | awk '{ print $5}')
     free_space=$(echo 100% $total_disk_usage | awk '{print $1 - $2}')
-    if [ "$num_archived_log_files" -gt 20 ]; then
-        echo "[OK] enough storage"
+    fspace_ok=$(echo ${free_space} 20.0 | awk '{if ($1 >= $2) print "YES"; else print "NO"}')
+    if [ "$fspace_ok" = "YES" ]; then
+        echo "[OK] free storage space"
     else
-        echo "[X] enough storage [ only $free_space % disk space is remained ]"
+        echo "[X]  free storage space [ only $free_space % disk space is remained ]"
     fi
 
     #cpu usage
-    #   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND 
-    # 16388 pops      20   0 3518060 1.707g  40928 S  47.5 21.9   2814:20 harmony  
+        #   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND 
+        # 16388 pops      20   0 3518060 1.707g  40928 S  47.5 21.9   2814:20 harmony  
     harmony_service_resource_usages=$(top -i -n 1 2>/dev/null | grep harmony)
     cpu_usage=$(echo  $harmony_service_resource_usages | awk '{ print $9}')
-    if [ "$cpu_usage" -lt 60 ]; then
+    cpu_ok=$(echo ${cpu_usage} 60.0 | awk '{if ($1 <= $2) print "YES"; else print "NO"}')
+    if [ "$cpu_ok" = "YES" ]; then
         echo "[OK] cpu usage"
     else
-        echo "[X] cpu usage [ it is $cpu_usage % which is more than 60% ]"
+        echo "[X]  cpu usage [ it is $cpu_usage % which is more than 60% ]"
     fi
 
     #ram usage
     ram_usage=$(echo  $harmony_service_resource_usages | awk '{ print $10}')
-    if [ "$ram_usage" -lt 60 ]; then
+    ram_ok=$(echo ${ram_usage} 60.0 | awk '{if ($1 <= $2) print "YES"; else print "NO"}')
+    if [ "$ram_ok" = "YES" ]; then
         echo "[OK] ram usage"
     else
-        echo "[X] ram usage [ it is $ram_usage % which is more than 60% ]"
+        echo "[X]  ram usage [ it is $ram_usage % which is more than 60% ]"
     fi
 
     #block is behind 
