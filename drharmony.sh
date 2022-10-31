@@ -1266,18 +1266,18 @@ function inspect {
         if [ -z n_errors ]; then
         echo "[OK] errors in log"
         else 
-        echo "[X]  errors in log"
+        echo "[X]  errors in log [ there are ${n_errors} errors in log file ]"
         fi
 
         n_staged_sync_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -E "error" | grep -c "STAGED_SYNC" )
         if [ -z n_staged_sync_errors ]; then
         echo "[OK] staged sync errors in log"
         else 
-        echo "[X]  staged sync errors in log"
+        echo "[X]  staged sync errors in log [ there are ${n_errors} staged sync errors in log file ]"
         fi
     else
-        echo "[X] checking errors in logs failed (log file not found)"
-        echo "[X] checking staged sync logs failed (log file not found)"
+        echo "[X] errors in log [ checking errors in logs failed (log file not found) ]"
+        echo "[X] errors in log [ checking staged sync logs failed (log file not found) ]"
     fi
     #how many errors today
     
@@ -1286,18 +1286,18 @@ function inspect {
     if [ ! -z $service_errors ]; then
         service_errors=$(journalctl -u harmony.service --no-pager -n 1000 | grep -c "error")
         if [ -z service_errors ]; then
-        echo "[OK] service is running ok"
+        echo "[OK] harmony service status"
         else 
-        echo "[X]  service got some errors in log"
+        echo "[X]  harmony service status [ got ${service_errors} errors in log ]"
         fi
     else
-        echo "[X] service is not running"
+        echo "[X] harmony service status [ is not running ]"
     fi
 
     #too many log files
     num_archived_log_files=$(ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
     if [ "$num_archived_log_files" -gt 10 ]; then
-        echo "[X] archived logs count" 
+        echo "[X] archived logs count [ too many archived logs ]" 
     else
         echo "[OK] archived logs count"
     fi
@@ -1306,18 +1306,67 @@ function inspect {
     ufw_status=$(sudo ufw status 2>/dev/null | grep "Status: active")
     if [ -z $ufw_status ]; then
         echo "[OK] firewall status "
+        
+        #check ufw open ports 
+        num_open_ports=$(sudo ufw status 2>/dev/null | grep -c "ALLOW")
+        num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep harmony | grep -c LISTEN)
+        if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
+            echo "[OK] firewall ports matched with listening ports"
+        else
+            echo "[OK] it seems firewall ports are not set properly"
+        fi
     else
-        echo "[X] firewall status "
+        echo "[X] firewall status [ firewall is not active ]"
     fi
 
     #open ports
+    num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
+    if [ "$num_archived_log_files" -gt 1 ]; then
+        echo "[X] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
+    else
+        echo "[OK] open ports"
+    fi
+
     #check pprof is healthy
-    #status of harmony service
+    pprof_top_output=$(go tool pprof -text http://localhost:6060/debug/pprof/heap 2>/dev/null | grep -c github.com)
+    if [ "$num_archived_log_files" -gt 1 ]; then
+        echo "[OK] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
+    else
+        echo "[X] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]"
+    fi
+
     #disk usage
+    total_disk_usage = $(df -h --total | grep total | awk '{ print $5}')
+    free_space=$(echo 100% $total_disk_usage | awk '{print $1 - $2}')
+    if [ "$num_archived_log_files" -gt 20 ]; then
+        echo "[OK] enough storage"
+    else
+        echo "[X] enough storage [ only $free_space % disk space is remained ]"
+    fi
+
     #cpu usage
+    #   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND 
+    # 16388 pops      20   0 3518060 1.707g  40928 S  47.5 21.9   2814:20 harmony  
+    harmony_service_resource_usages=$(top -i -n 1 2>/dev/null | grep harmony)
+    cpu_usage=$(echo  $harmony_service_resource_usages | awk '{ print $9}')
+    if [ "$cpu_usage" -lt 60 ]; then
+        echo "[OK] cpu usage"
+    else
+        echo "[X] cpu usage [ it is $cpu_usage % which is more than 60% ]"
+    fi
+
     #ram usage
+    ram_usage=$(echo  $harmony_service_resource_usages | awk '{ print $10}')
+    if [ "$ram_usage" -lt 60 ]; then
+        echo "[OK] ram usage"
+    else
+        echo "[X] ram usage [ it is $ram_usage % which is more than 60% ]"
+    fi
+
     #block is behind 
+
     #service respond time -> send simple query and check time
+    
     #number of connection to other nodes
 
     waitForAnyKey
