@@ -1270,18 +1270,18 @@ function inspect {
         if [ -z n_errors ]; then
         echo "[OK] errors in log"
         else 
-        echo "[X]  errors in log [ there are ${n_errors} errors in log file ]"
+        echo "[X ] errors in log [ there are ${n_errors} errors in log file ]"
         fi
 
         n_staged_sync_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -E "error" | grep -c "STAGED_SYNC" )
         if [ -z n_staged_sync_errors ]; then
         echo "[OK] staged sync errors in log"
         else 
-        echo "[X]  staged sync errors in log [ there are ${n_errors} staged sync errors in log file ]"
+        echo "[X ] staged sync errors in log [ there are ${n_errors} staged sync errors in log file ]"
         fi
     else
-        echo "[X]  errors in log [ checking errors in logs failed (log file not found) ]"
-        echo "[X]  errors in log [ checking staged sync logs failed (log file not found) ]"
+        echo "[X ] errors in log [ checking errors in logs failed (log file not found) ]"
+        echo "[X ] errors in log [ checking staged sync logs failed (log file not found) ]"
     fi
     #how many errors today
     
@@ -1292,16 +1292,16 @@ function inspect {
         if [ -z service_errors ]; then
         echo "[OK] harmony service status"
         else 
-        echo "[X]  harmony service status [ got ${service_errors} errors in log ]"
+        echo "[X ] harmony service status [ got ${service_errors} errors in log ]"
         fi
     else
-        echo "[X]  harmony service status [ is not running ]"
+        echo "[X ] harmony service status [ is not running ]"
     fi
 
     #too many log files
     num_archived_log_files=$(ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
     if [ "$num_archived_log_files" -gt 10 ]; then
-        echo "[X]  archived logs count [ too many archived logs ]" 
+        echo "[X ] archived logs count [ too many archived logs ]" 
     else
         echo "[OK] archived logs count"
     fi
@@ -1315,18 +1315,18 @@ function inspect {
         num_open_ports=$(sudo ufw status 2>/dev/null | grep -c "ALLOW")
         num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep harmony | grep -c LISTEN)
         if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
-            echo "[OK] firewall ports matched with listening ports"
+            echo "[OK] firewall ports should be matched with listening ports"
         else
-            echo "[OK] it seems firewall ports are not set properly"
+            echo "[X ] firewall ports should be matched with listening ports [$num_open_ports ports are open and $num_harmony_listening_ports ports are allowed by firewall]"
         fi
     else
-        echo "[X]  firewall status [ firewall is not active ]"
+        echo "[X ] firewall status [ firewall is not active ]"
     fi
 
     #open ports
     num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
     if [ "$num_archived_log_files" -gt 1 ]; then
-        echo "[X]  open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
+        echo "[X ] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
         echo "[OK] open ports"
     fi
@@ -1336,7 +1336,7 @@ function inspect {
     if [ "$num_archived_log_files" -gt 1 ]; then
         echo "[OK] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
-        echo "[X]  pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]"
+        echo "[X ] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]"
     fi
 
     #disk usage
@@ -1346,7 +1346,7 @@ function inspect {
     if [ "$fspace_ok" = "YES" ]; then
         echo "[OK] free storage space"
     else
-        echo "[X]  free storage space [ only $free_space % disk space is remained ]"
+        echo "[X ] free storage space [ only $free_space % disk space is remained ]"
     fi
 
     #cpu usage
@@ -1358,7 +1358,7 @@ function inspect {
     if [ "$cpu_ok" = "YES" ]; then
         echo "[OK] cpu usage"
     else
-        echo "[X]  cpu usage [ it is $cpu_usage % which is more than 60% ]"
+        echo "[X ] cpu usage [ it is $cpu_usage % which is more than 60% ]"
     fi
 
     #ram usage
@@ -1367,7 +1367,7 @@ function inspect {
     if [ "$ram_ok" = "YES" ]; then
         echo "[OK] ram usage"
     else
-        echo "[X]  ram usage [ it is $ram_usage % which is more than 60% ]"
+        echo "[X ] ram usage [ it is $ram_usage % which is more than 60% ]"
     fi
 
     #block is behind 
