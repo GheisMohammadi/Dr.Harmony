@@ -1287,7 +1287,7 @@ function inspect {
     
     #how many errors in service logs
     service_status=$(systemctl status harmony.service 2>/dev/null | grep -c "active (running)")
-    if [ ! -z $service_errors ]; then
+    if [ ! -z $service_status ]; then
         service_errors=$(journalctl -u harmony.service --no-pager -n 1000 | grep -c "error")
         if [ -z service_errors ]; then
         echo "[OK] harmony service status"
@@ -1317,7 +1317,7 @@ function inspect {
         if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
             echo "[OK] firewall ports should be matched with listening ports"
         else
-            echo "[X ] firewall ports should be matched with listening ports [$num_open_ports ports are open and $num_harmony_listening_ports ports are allowed by firewall]"
+            echo "[X ] firewall ports should be matched with listening ports [$num_open_ports ports are open by harmony service and $num_harmony_listening_ports ports are allowed by firewall]"
         fi
     else
         echo "[X ] firewall status [ firewall is not active ]"
@@ -1333,10 +1333,10 @@ function inspect {
 
     #check pprof is healthy
     pprof_top_output=$(go tool pprof -text http://localhost:6060/debug/pprof/heap 2>/dev/null | grep -c github.com)
-    if [ "$num_archived_log_files" -gt 1 ]; then
-        echo "[OK] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
+    if [ "$pprof_top_output" -gt 1 ]; then
+        echo "[OK] pprof health check" 
     else
-        echo "[X ] pprof health check [ rather than harmony ports, other $num_other_listening_ports ports are open ]"
+        echo "[X ] pprof health check [ report is not available ]"
     fi
 
     #disk usage
