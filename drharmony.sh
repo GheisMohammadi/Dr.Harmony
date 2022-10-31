@@ -406,21 +406,33 @@ function getTransactionsHistory {
 # sample result
 # {"jsonrpc":"2.0","id":1,"result":"0x0"}
 function hmy_getBalance {
-    ADD="0x320b3FedBaF5A15Ad50F5c2ff4A659cf4dB64B02"
+    exec 3>&1;
+    accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    ADDR="0x320b3FedBaF5A15Ad50F5c2ff4A659cf4dB64B02"
     URL="http://localhost:9501"
-    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBalance\",\"params\":[\"${ADD}\", \"latest\"],\"id\":1}"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBalance\",\"params\":[\"${accAddress}\", \"latest\"],\"id\":1}"
+    
     waitForAnyKey
 }
 
 function eth_getBalance {
+    exec 3>&1;
+    accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
     curl --location --request POST 'https://api.s0.t.hmny.io' \
     --header 'Content-Type: application/json' \
-    --data-raw '{
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "eth_getBalance",
-        "params": ["0x320b3FedBaF5A15Ad50F5c2ff4A659cf4dB64B02", "latest"]
-    }'
+    --data-raw "{
+        \"jsonrpc\": \"2.0\",
+        \"id\": 1,
+        \"method\": \"eth_getBalance\",
+        \"params\": [\"${accAddress}\", \"latest\"]
+    }"
+    
     waitForAnyKey
 }
 
@@ -1476,7 +1488,7 @@ function others_2 {
     waitForAnyKey
 }
 
-function getProfileAndLogs {
+function others {
     others_options=(1 "install golang"
                     2 "restart node")
 
