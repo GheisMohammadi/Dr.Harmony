@@ -905,6 +905,18 @@ function showFullHardwareInfo {
     waitForAnyKey
 }
 
+function showListeningPorts {
+    echo "harmony listening ports"
+    echo "====================================================="
+    sudo lsof -i -P -n | grep LISTEN | grep harmony
+    echo "====================================================="
+    echo "other listening ports"
+    echo "====================================================="
+    sudo lsof -i -P -n | grep LISTEN | grep -v harmony
+
+    waitForAnyKey
+}
+
 function nodeInfo {
 
     node_info_options=(1 "all meta data"
@@ -917,7 +929,8 @@ function nodeInfo {
                   8 "OS info"
                   9 "binaries info"
                   10 "EC2 info"
-                  11 "Full hardware info")
+                  11 "Full hardware info"
+                  12 "listening ports")
 
     info_menu_result="done"
 
@@ -966,6 +979,9 @@ function nodeInfo {
                     ;;
                 11)
                     showFullHardwareInfo
+                    ;;
+                12)
+                    showListeningPorts
                     ;;
                 *)
                     info_menu_result="back"
@@ -1076,7 +1092,7 @@ function statusHarmonyService {
 }
 
 function serviceLogs {
-    sudo journalctl -u harmony -n 1000 --no-pager --all
+    sudo journalctl -u harmony -n 1000 -q --no-pager --all
     waitForAnyKey
 }
 
@@ -1261,7 +1277,6 @@ function compareFloats {
 
 function inspect {
     echo "inspecting health and security"
-    echo "the inspect menu will be added later"
 
     #how many errors in logs
     #how many syncing errors in logs
@@ -1283,13 +1298,14 @@ function inspect {
         echo "[X ] errors in log [ checking errors in logs failed (log file not found) ]"
         echo "[X ] errors in log [ checking staged sync logs failed (log file not found) ]"
     fi
+
     #how many errors today
     
     #how many errors in service logs
     service_status=$(systemctl status harmony.service 2>/dev/null | grep -c "active (running)")
     if [ ! -z $service_status ]; then
-        service_errors=$(journalctl -u harmony.service --no-pager -n 1000 | grep -c "error")
-        if [ -z service_errors ]; then
+        service_errors=$(journalctl -u harmony.service --no-pager -q -n 1000 | grep -c "error")
+        if [ -z $service_errors ]; then
         echo "[OK] harmony service status"
         else 
         echo "[X ] harmony service status [ got ${service_errors} errors in log ]"
@@ -1370,11 +1386,35 @@ function inspect {
         echo "[X ] ram usage [ it is $ram_usage % which is more than 60% ]"
     fi
 
-    #block is behind 
+    #block is behind
+    is_syncing=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmy_syncing",
+        "params":[],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST '0.0.0.0:9500' 2>/dev/null | jq -r ".result")
+    if [ "$is_syncing" = "false" ]; then
+        echo "[OK] syncing status"
+    else
+        echo "[X ] syncing status [ node is syncing ]"
+    fi
 
     #service respond time -> send simple query and check time
     
     #number of connection to other nodes
+    conns_hex=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"net_peerCount",
+        "params":[],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST '0.0.0.0:9500' 2>/dev/null | jq -r ".result")
+    num_conns=$(printf "%d\n" "${conns_hex}")
+    conns_ok=$(echo ${num_conns} 50.0 | awk '{if ($1 >= $2) print "YES"; else print "NO"}')
+        if [ "$ram_ok" = "YES" ]; then
+        echo "[OK] connected peers"
+    else
+        echo "[X ] connected peers [ only $num_conns connected peers ]"
+    fi
 
     waitForAnyKey
 }
@@ -1423,6 +1463,51 @@ function getProfileAndLogs {
 }
 
 
+#========================================================================
+# Others 
+#========================================================================
+function others_1 {
+
+    waitForAnyKey
+}
+
+function others_2 {
+
+    waitForAnyKey
+}
+
+function getProfileAndLogs {
+    others_options=(1 "install golang"
+                    2 "restart node")
+
+    others_menu_result="done"
+
+    while [ $others_menu_result == "done" ]
+    do
+        selected_others_opts=$(dialog --clear \
+                        --backtitle "$BACKTITLE" \
+                        --title "Logs and Profile" \
+                        --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${others_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+        case $selected_others_opts in
+                1)
+                    installGo
+                    waitForAnyKey
+                    ;;
+                2)
+                    reboot
+                    ;;
+                *)  
+                    others_menu_result="back"
+        esac
+
+    done
+}
+
 #=========================================================================
 # MAIN MENU
 #=========================================================================
@@ -1435,7 +1520,8 @@ function showMainMenu {
              6 "logs and profile report (pprof)"
              7 "harmony service"
              8 "blockchain"
-             9 "security")
+             9 "security"
+             10 "others")
 
     main_menu_result="done"
 
@@ -1482,6 +1568,9 @@ function showMainMenu {
             9)
                 echo "security options will be added later"
                 waitForAnyKey
+                ;;
+            10)
+                others
                 ;;
             *)
                 main_menu_result="exit"
