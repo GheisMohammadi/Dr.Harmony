@@ -300,7 +300,7 @@ function installNewNodeFromBinaryFile {
     
     binary_name="binary"
     
-     case $new_node_network_id in
+    case $new_node_network_id in
             1)
                 #"mainnet"
                 binary_name="binary"
@@ -335,25 +335,30 @@ function installNewNode {
                      2 "download binary"
                      3 "install rclone")
 
-    selected_install_option=$(dialog --clear \
-                    --backtitle "$BACKTITLE" \
-                    --title "Run New Validator" \
-                    --ok-label "Install" --cancel-label "Back" \
-                    --menu "$MENU" \
-                    $HEIGHT $WIDTH $CHOICE_HEIGHT \
-                    "${install_options[@]}" \
-                    2>&1 >/dev/tty)
     clear
     new_node_menu_res="done"
     
-    # ask user for network type
-    askForNetwork
-    
-    case $selected_install_option in
+    while [ $new_node_menu_res == "done" ]
+    do
+        
+        selected_install_option=$(dialog --clear \
+                --backtitle "$BACKTITLE" \
+                --title "Run New Validator" \
+                --ok-label "Install" --cancel-label "Back" \
+                --menu "$MENU" \
+                $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                "${install_options[@]}" \
+                2>&1 >/dev/tty)
+
+        clear
+        
+        case $selected_install_option in
             1)
+                askForNetwork
                 installNewNodeFromSourceCode 
                 ;;
             2)
+                askForNetwork
                 installNewNodeFromBinaryFile
                 ;;
             3)
@@ -362,11 +367,13 @@ function installNewNode {
             *)
                 new_node_menu_res="back"
                 ;;
-    esac
+        esac
 
-    if [ $new_node_menu_res == "done" ]; then
-        waitForAnyKey
-    fi
+        if [ $new_node_menu_res == "done" ]; then
+            waitForAnyKey
+        fi
+    done
+
 }
 
 #========================================================================
@@ -1018,11 +1025,85 @@ function nodeInfo {
     done
 }
 
+function progressbar {
+   local title=$1 
+   local elapsed=$2
+   local duration=$3
+
+   printf "[ $title ]"
+   already_done() { for ((done=0; done<$elapsed; done++)); do printf "▇"; done }
+   remaining() { for ((remain=$elapsed; remain<$duration; remain++)); do printf " "; done }
+   percentage() { printf "| %s%%" $(( (($elapsed)*100)/($duration)*100/100 )); }
+   clean_line() { printf "\r"; }
+
+   already_done; remaining; percentage
+}
+
+function showCpuRamUsage {
+    # run for 10 seconds
+    for i in {1..10}
+    do
+        clear
+
+        harmony_service_resource_usages=$(top -i -n 1 2>/dev/null | grep harmony)
+        cpu_usage=$(echo  $harmony_service_resource_usages | awk '{ print $10}')
+        ram_usage=$(echo  $harmony_service_resource_usages | awk '{ print $11}')
+
+        cpu_p=$(awk -v v="$cpu_usage" 'BEGIN{printf "%d", v}')
+        ram_p=$(awk -v v="$ram_usage" 'BEGIN{printf "%d", v}')
+
+        # watch --interval 1 --no-title 'top -i -b 2>/dev/null | grep -E "harmony|PID|total|Task|Cpu"'
+        progressbar "cpu" ${cpu_p} 100
+        echo ""
+        progressbar "ram" ${ram_p} 100
+        echo ""
+
+        sleep 1
+    done
+    waitForAnyKey
+}
+
+function showAllProcesses {
+    top -i
+    waitForAnyKey
+}
+
+function showHarmonyResourceUsage {
+    top -p $(pgrep -n harmony)  
+    waitForAnyKey
+}
+
+function showLiveHarmonyLogs {
+   tail -f -n 1000 latest/zerolog-harmony.log
+   waitForAnyKey
+}
+
+function showLiveBlockNumber {
+    # run for 10 seconds
+    for i in {1..5}
+    do
+        clear
+        cur_bn=$(curl -d '{
+            "jsonrpc":"2.0",
+            "method":"hmyv2_blockNumber",
+            "params":[],
+            "id":1
+        }' -H 'Content-Type:application/json' -X POST '0.0.0.0:9500' 2>/dev/null | jq -r ".result")
+        echo "Block Number: $cur_bn"
+
+        sleep 2
+    done
+    waitForAnyKey
+}
+
 function nodeWatch {
  
-    node_watch_options=(1 "memory usage"
-                        2 "cpu usage"
-                        3 "block number")
+    node_watch_options=(1 "all processes"
+                        2 "memory usage" 
+                        3 "harmony cpu/ram usage"
+                        4 "harmony resource usages"
+                        5 "harmony logs"
+                        6 "harmony block number")
 
     node_watch_menu_result="done"
 
@@ -1040,13 +1121,23 @@ function nodeWatch {
 
         case $selected_watch_option in
                 1)
-                    watch -n 5 free -m 
+                    showAllProcesses
                     ;;
                 2)
-                    sudo systemctl status harmony
+                    watch -n 5 free -m 
                     ;;
                 3)
-                    while true; do $HMY utility metadata | grep current-block-number; sleep 2; clear; done
+                    showCpuRamUsage
+                    ;;
+                4)
+                    showHarmonyResourceUsage
+                    ;;
+                5)
+                    showLiveHarmonyLogs
+                    ;;
+                6)
+                    #while true; do $HMY utility metadata | grep current-block-number; sleep 2; clear; done
+                    showLiveBlockNumber
                     ;;
                 *)
                     node_watch_menu_result="back"
@@ -1396,7 +1487,7 @@ function inspect {
         #   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND 
         # 16388 pops      20   0 3518060 1.707g  40928 S  47.5 21.9   2814:20 harmony  
     harmony_service_resource_usages=$(top -i -n 1 2>/dev/null | grep harmony)
-    cpu_usage=$(echo  $harmony_service_resource_usages | awk '{ print $9}')
+    cpu_usage=$(echo  $harmony_service_resource_usages | awk '{ print $10}')
     cpu_ok=$(echo ${cpu_usage} 60.0 | awk '{if ($1 <= $2) print "YES"; else print "NO"}')
     if [ "$cpu_ok" = "YES" ]; then
         echo "[OK] cpu usage"
@@ -1405,7 +1496,7 @@ function inspect {
     fi
 
     #ram usage
-    ram_usage=$(echo  $harmony_service_resource_usages | awk '{ print $10}')
+    ram_usage=$(echo  $harmony_service_resource_usages | awk '{ print $11}')
     ram_ok=$(echo ${ram_usage} 60.0 | awk '{if ($1 <= $2) print "YES"; else print "NO"}')
     if [ "$ram_ok" = "YES" ]; then
         echo "[OK] ram usage"
