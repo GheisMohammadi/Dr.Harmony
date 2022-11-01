@@ -1400,14 +1400,14 @@ function inspect {
     #how many syncing errors in logs
     if [ -f "${LOGS_DIR}/zerolog-harmony.log" ]; then
         n_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -c "error")
-        if [ -z n_errors ]; then
+        if [ $n_errors -eq 0 ]; then
         echo "[OK] errors in log"
         else 
         echo "[X ] errors in log [ there are ${n_errors} errors in log file ]"
         fi
 
         n_staged_sync_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -E "error" | grep -c "STAGED_SYNC" )
-        if [ -z n_staged_sync_errors ]; then
+        if [ $n_staged_sync_errors -eq 0 ]; then
         echo "[OK] staged sync errors in log"
         else 
         echo "[X ] staged sync errors in log [ there are ${n_errors} staged sync errors in log file ]"
@@ -1421,12 +1421,12 @@ function inspect {
     
     #how many errors in service logs
     service_status=$(systemctl status harmony.service 2>/dev/null | grep -c "active (running)")
-    if [ ! -z $service_status ]; then
-        service_errors=$(journalctl -u harmony.service --no-pager -q -n 1000 | grep -c "error")
-        if [ -z $service_errors ]; then
-        echo "[OK] harmony service status"
+    if [ $service_status -gt 0 ]; then
+        service_errors=$(journalctl -u harmony.service --no-pager -q -n 1000 | grep -c -E "error|fail")
+        if [ $service_errors -eq 0 ]; then
+            echo "[OK] harmony service status"
         else 
-        echo "[X ] harmony service status [ got ${service_errors} errors in log ]"
+            echo "[X ] harmony service status [ got ${service_errors} errors in log ]"
         fi
     else
         echo "[X ] harmony service status [ is not running ]"
@@ -1442,7 +1442,7 @@ function inspect {
 
     #ufw status
     ufw_status=$(sudo ufw status 2>/dev/null | grep "Status: active")
-    if [ -z $ufw_status ]; then
+    if [ -z "$ufw_status" ]; then
         echo "[OK] firewall status "
         
         #check ufw open ports 
@@ -1561,7 +1561,7 @@ function showLogs {
     fi
 
 
-    if [ -z "$included" ]; then
+    if [ $included -eq 0 ]; then
         tail $lines_flag -f latest/zero*.log
     else
         tail $lines_flag -f latest/zero*.log | grep $included
