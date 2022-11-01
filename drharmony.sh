@@ -1607,9 +1607,9 @@ function showLogs {
 
 
     if [ -z "$included" ]; then
-        tail $lines_flag -f latest/zero*.log
+        tail $lines_flag latest/zero*.log
     else
-        tail $lines_flag -f latest/zero*.log | grep -E "$included"
+        tail $lines_flag latest/zero*.log | grep -E "$included"
     fi
     
     waitForAnyKey
