@@ -1044,7 +1044,7 @@ function showCpuRamUsage {
     for i in {1..10}
     do
         clear
-
+        echo "$i seconds ..."
         harmony_service_resource_usages=$(top -i -n 1 2>/dev/null | grep harmony)
         cpu_usage=$(echo  $harmony_service_resource_usages | awk '{ print $10}')
         ram_usage=$(echo  $harmony_service_resource_usages | awk '{ print $11}')
@@ -1083,6 +1083,7 @@ function showLiveBlockNumber {
     for i in {1..5}
     do
         clear
+        echo "$i seconds ..."
         cur_bn=$(curl -d '{
             "jsonrpc":"2.0",
             "method":"hmyv2_blockNumber",
@@ -1617,7 +1618,7 @@ function showLogs {
 
 function getProfileAndLogs {
     pl_options=(1 "logs"
-                2 "prfofile")
+                2 "profile")
 
     profile_menu_result="done"
 
