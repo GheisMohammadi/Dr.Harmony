@@ -1410,7 +1410,7 @@ function checkSecurity {
 
     #open ports
     num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
-    if [ "$num_archived_log_files" -gt 1 ]; then
+    if [ "$num_other_listening_ports" -gt 1 ]; then
         echo "[X ] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
         echo "[OK] open ports"
@@ -1422,7 +1422,7 @@ function checkSecurity {
 
     # check password login should be disabled
 
-    
+
     waitForAnyKey
 }
 
@@ -1501,7 +1501,7 @@ function inspect {
 
     #open ports
     num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
-    if [ "$num_archived_log_files" -gt 1 ]; then
+    if [ "$num_other_listening_ports" -gt 1 ]; then
         echo "[X ] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
         echo "[OK] open ports"
