@@ -1386,6 +1386,48 @@ function troubleShooting {
 }
 
 #========================================================================
+# Security 
+#========================================================================
+function checkSecurity {
+    echo "checking securities ..."
+
+    #ufw status
+    ufw_status=$(sudo ufw status 2>/dev/null | grep "Status: active")
+    if [ -z "$ufw_status" ]; then
+        echo "[OK] firewall status "
+        
+        #check ufw open ports 
+        num_open_ports=$(sudo ufw status 2>/dev/null | grep -c "ALLOW")
+        num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep harmony | grep -c LISTEN)
+        if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
+            echo "[OK] firewall ports should be matched with listening ports"
+        else
+            echo "[X ] firewall ports should be matched with listening ports [$num_open_ports ports are open by harmony service and $num_harmony_listening_ports ports are allowed by firewall]"
+        fi
+    else
+        echo "[X ] firewall status [ firewall is not active ]"
+    fi
+
+    #open ports
+    num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
+    if [ "$num_archived_log_files" -gt 1 ]; then
+        echo "[X ] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
+    else
+        echo "[OK] open ports"
+    fi
+
+    # check root access should be disable
+
+    # check swap should be disable
+
+    # check password login should be disabled
+
+    
+    waitForAnyKey
+}
+
+
+#========================================================================
 # Inspect 
 #========================================================================
 function compareFloats {
@@ -1533,6 +1575,9 @@ function inspect {
     else
         echo "[X ] connected peers [ only $num_conns connected peers ]"
     fi
+
+    # date and time should be adjusted 
+
 
     waitForAnyKey
 }
@@ -1705,8 +1750,7 @@ function showMainMenu {
                 blockchain
                 ;;
             9)
-                echo "security options will be added later"
-                waitForAnyKey
+                checkSecurity
                 ;;
             10)
                 others
