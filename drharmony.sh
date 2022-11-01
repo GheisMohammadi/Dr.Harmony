@@ -1606,10 +1606,10 @@ function showLogs {
     fi
 
 
-    if [ $included -eq 0 ]; then
+    if [ -z "$included" ]; then
         tail $lines_flag -f latest/zero*.log
     else
-        tail $lines_flag -f latest/zero*.log | grep $included
+        tail $lines_flag -f latest/zero*.log | grep -E "$included"
     fi
     
     waitForAnyKey
