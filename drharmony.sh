@@ -271,6 +271,7 @@ function downloadAndBuildSourceCode {
         make linux_static
         cp ./bin/harmony ~/
         cd ~
+        chmod +x harmony
         buildresult="OK"
     fi
 }
@@ -305,9 +306,50 @@ function buildHarmonyBinary {
 #========================================================================
 # Install New Node
 #========================================================================
+function createBlsKeys {
+    exec 3>&1;
+    shard_num=$(dialog --nocancel --ok-label "Next" --inputbox "shard number?" 0 0 "0" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+    echo "build validator key for shard: $shard_num";
+
+    exec 3>&1;
+    keys_count=$(dialog --nocancel --ok-label "Next" --inputbox "how many keys?" 0 0 "1" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+    echo "number of keys: $keys_count";
+
+    echo $shard_num > shard.txt
+    echo $new_node_network_name > network.txt
+
+    ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num --passphrase
+}
+
+function continueInstallNewNode {
+    # create bls keys
+    createBlsKeys
+
+    # move bls keys to .hmy/blskeys folder
+    mkdir -p ".hmy/blskeys"
+    mv *.key .hmy/blskeys
+
+    # download db for mainnet
+    if [ $new_node_network_name == "mainnet" ]; then
+        echo "install rclone and sync db using that, it may takes a couple of hours or a few days, so be patient plz ..."
+        rclone
+    fi
+
+    echo "dump the config file ..."
+    ./harmony config dump ./harmony.conf
+
+    echo "run validator ..."
+    ./harmony --network $new_node_network_name --config ./harmony.conf
+}
+
 function installNewNodeFromBinaryFile {
     echo "install new harmony node from binary file ..."
     
+    cd ~
     binary_name="binary"
     
     case $new_node_network_id in
@@ -328,6 +370,8 @@ function installNewNodeFromBinaryFile {
     curl -LO "https://harmony.one/$binary_name"
     mv $binary_name harmony
     chmod +x harmony
+
+    continueInstallNewNode
 }
 
 function installNewNodeFromSourceCode {
@@ -337,29 +381,7 @@ function installNewNodeFromSourceCode {
     echo "install new harmony node from source code ..."
     buildHarmonyBinary
     if [ $buildresult == "OK" ]; then
-        exec 3>&1;
-        shard_num=$(dialog --nocancel --ok-label "Next" --inputbox "shard number?" 0 0 "0" 2>&1 1>&3);
-        exitcode=$?;
-        exec 3>&-;
-        echo "build validator key for shard :$shard_num";
-
-        echo $shard_num > shard.txt
-        echo $new_node_network_name > network.txt
-
-        ./hmy keys generate-bls-keys --count 1 --shard $shard_num --passphrase
-        mkdir -p ".hmy/blskeys"
-        mv *.key .hmy/blskeys
-
-        if [ $new_node_network_name == "mainnet" ]; then
-            echo "install rclone and sync db using that, it may takes a couple of hours or a few days, so be patient plz ..."
-            rclone
-        fi
-
-        echo "dump the config file ..."
-        ./harmony config dump ./harmony.conf
-
-        echo "run validator ..."
-        ./harmony --network $new_node_network_name --config ./harmony.conf
+        continueInstallNewNode
     else
         echo "new node installation failed. as you fix the issue, try again"
     fi
@@ -370,7 +392,8 @@ function installNewNode {
 
     install_options=(1 "build binary from source code"
                      2 "download binary"
-                     3 "install rclone")
+                     3 "install rclone"
+                     4 "create new bls key")
 
     clear
     new_node_menu_res="done"
@@ -400,6 +423,9 @@ function installNewNode {
                 ;;
             3)
                 install_rclone
+                ;;
+            4)
+                createBlsKeys
                 ;;
             *)
                 new_node_menu_res="back"
