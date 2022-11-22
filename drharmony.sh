@@ -322,7 +322,7 @@ function createBlsKeys {
     echo $shard_num > shard.txt
     echo $new_node_network_name > network.txt
 
-    ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num --passphrase
+    ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num
 }
 
 function setupSystemd {
