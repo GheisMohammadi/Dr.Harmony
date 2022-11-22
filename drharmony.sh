@@ -243,6 +243,9 @@ function downloadAndBuildSourceCode {
     buildresult="FAIL"
     GO_OK=$(go version|grep "go version")
     if [ "$GO_OK" = "" ]; then
+        echo "can't find go language or maybe go language is not installed yet"
+        echo "please try  'source ~/.profile'  and try again"
+    else
         mkdir -p $(go env GOPATH)/src/github.com/harmony-one
         cd $(go env GOPATH)/src/github.com/harmony-one
         git clone https://github.com/harmony-one/mcl.git
@@ -269,9 +272,6 @@ function downloadAndBuildSourceCode {
         cp ./bin/harmony ~/
         cd ~
         buildresult="OK"
-    else
-        echo "can't find go language or maybe go language is not installed yet"
-        echo "please try  'source ~/.profile'  and try again"
     fi
 }
 
