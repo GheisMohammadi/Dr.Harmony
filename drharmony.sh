@@ -350,7 +350,7 @@ function installNewNodeFromSourceCode {
         mkdir -p ".hmy/blskeys"
         mv *.key .hmy/blskeys
 
-        if [ $new_node_network_name == "mainnet" ]
+        if [ $new_node_network_name == "mainnet" ]; then
             echo "install rclone and sync db using that, it may takes a couple of hours or a few days, so be patient plz ..."
             rclone
         fi
