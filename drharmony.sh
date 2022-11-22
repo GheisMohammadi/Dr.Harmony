@@ -326,7 +326,8 @@ function createBlsKeys {
 }
 
 function setupSystemd {
-    sudo echo "    [Unit]
+    echo "
+    [Unit]
     Description=Harmony daemon
     After=network-online.target
 
@@ -343,7 +344,7 @@ function setupSystemd {
     LimitNPROC=65536
 
     [Install]
-    WantedBy=multi-user.target" > /etc/systemd/system/harmony.service
+    WantedBy=multi-user.target" | sudo tee /etc/systemd/system/harmony.service
 
     sudo chmod 755 /etc/systemd/system/harmony.service
     sudo systemctl enable harmony.service
