@@ -327,7 +327,7 @@ function createBlsKeys {
     exitcode=$?;
     exec 3>&-;
 
-    echo "./keypass.txt" > $key_password
+    echo $key_password > "./keypass.txt" 
     ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num --passphrase-file "./keypass.txt" 
     rm "./keypass.txt"
 }
