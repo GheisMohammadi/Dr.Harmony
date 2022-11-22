@@ -336,8 +336,8 @@ function setupSystemd {
     Restart=always
     RestartSec=1
     User=harmony
-    WorkingDirectory=~
-    ExecStart=~/harmony --network $new_node_network_name --config ./harmony.conf
+    WorkingDirectory=$HOME
+    ExecStart=$HOME/harmony --network $new_node_network_name --config ./harmony.conf
     SyslogIdentifier=harmony
     StartLimitInterval=0
     LimitNOFILE=65536
