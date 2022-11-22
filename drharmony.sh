@@ -326,7 +326,7 @@ function createBlsKeys {
 }
 
 function setupSystemd {
-    echo "    [Unit]
+    sudo echo "    [Unit]
     Description=Harmony daemon
     After=network-online.target
 
