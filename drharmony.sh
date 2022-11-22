@@ -322,7 +322,14 @@ function createBlsKeys {
     echo $shard_num > shard.txt
     echo $new_node_network_name > network.txt
 
-    ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num
+    exec 3>&1;
+    key_password=$(dialog --nocancel --ok-label "Next" --inputbox "enter passphrase for keys" 0 0 "123" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    echo "./keypass.txt" > $key_password
+    ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num --passphrase-file "./keypass.txt" 
+    rm "./keypass.txt"
 }
 
 function setupSystemd {
@@ -356,6 +363,12 @@ function continueInstallNewNode {
 
     # move bls keys to .hmy/blskeys folder
     mkdir -p ".hmy/blskeys"
+
+    # create passphrase files
+    for file in *.key; do 
+        echo "$key_password" > "${file%.key}.pass"
+    done
+
     mv *.key .hmy/blskeys
 
     # download db for mainnet
