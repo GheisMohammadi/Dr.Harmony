@@ -370,6 +370,7 @@ function continueInstallNewNode {
     done
 
     mv *.key .hmy/blskeys
+    mv *.pass .hmy/blskeys
 
     # download db for mainnet
     if [ $new_node_network_name == "mainnet" ]; then
