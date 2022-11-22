@@ -240,29 +240,39 @@ function installGo {
 }
 
 function downloadAndBuildSourceCode {
-    mkdir -p $(go env GOPATH)/src/github.com/harmony-one
-    cd $(go env GOPATH)/src/github.com/harmony-one
-    git clone https://github.com/harmony-one/mcl.git
-    git clone https://github.com/harmony-one/bls.git
-    git clone https://github.com/harmony-one/harmony.git
-    cd harmony
-    #if not using harmony repo
-    if [ $use_hmy_repo -eq 1 ]; then
-        git remote rm origin2
-        git remote add origin2 $repo
-    fi
-    git branch -vv
-    if [ ${#branch_name} -ge 3 ]; then
-        git checkout $branch_name
-        if [ $use_hmy_repo -eq 0 ]; then
-            git pull origin $branch_name
-        else
-            git pull origin2 $branch_name
+    buildresult="FAIL"
+    GO_OK=$(go version|grep "go version")
+    if [ "$GO_OK" = "" ]; then
+        mkdir -p $(go env GOPATH)/src/github.com/harmony-one
+        cd $(go env GOPATH)/src/github.com/harmony-one
+        git clone https://github.com/harmony-one/mcl.git
+        git clone https://github.com/harmony-one/bls.git
+        git clone https://github.com/harmony-one/harmony.git
+        cd harmony
+        #if not using harmony repo
+        if [ $use_hmy_repo -eq 1 ]; then
+            git remote rm origin2
+            git remote add origin2 $repo
         fi
+        git branch -vv
+        if [ ${#branch_name} -ge 3 ]; then
+            git checkout $branch_name
+            if [ $use_hmy_repo -eq 0 ]; then
+                git pull origin $branch_name
+            else
+                git pull origin2 $branch_name
+            fi
+        fi
+        go mod tidy
+        make
+        make linux_static
+        cp ./bin/harmony ~/
+        cd ~
+        buildresult="OK"
+    else
+        echo "can't find go language or maybe go language is not installed yet"
+        echo "please try  'source ~/.profile'  and try again"
     fi
-    go mod tidy
-    make
-    make linux_static
 }
 
 function buildHarmonyBinary {
@@ -326,6 +336,33 @@ function installNewNodeFromSourceCode {
     # install node
     echo "install new harmony node from source code ..."
     buildHarmonyBinary
+    if [ $buildresult == "OK" ]; then
+        exec 3>&1;
+        shard_num=$(dialog --nocancel --ok-label "Next" --inputbox "shard number?" 0 0 "0" 2>&1 1>&3);
+        exitcode=$?;
+        exec 3>&-;
+        echo "build validator key for shard :$shard_num";
+
+        echo $shard_num > shard.txt
+        echo $new_node_network_name > network.txt
+
+        ./hmy keys generate-bls-keys --count 1 --shard $shard_num --passphrase
+        mkdir -p ".hmy/blskeys"
+        mv *.key .hmy/blskeys
+
+        if [ $new_node_network_name == "mainnet" ]
+            echo "install rclone and sync db using that, it may takes a couple of hours or a few days, so be patient plz ..."
+            rclone
+        fi
+
+        echo "dump the config file ..."
+        ./harmony config dump ./harmony.conf
+
+        echo "run validator ..."
+        ./harmony --network $new_node_network_name --config ./harmony.conf
+    else
+        echo "new node installation failed. as you fix the issue, try again"
+    fi
 }
 
 function installNewNode {
