@@ -335,7 +335,7 @@ function setupSystemd {
     Type=simple
     Restart=always
     RestartSec=1
-    User=harmony
+    User=$USER
     WorkingDirectory=${HOME%/}
     ExecStart=${HOME%/}/harmony --network $new_node_network_name --config ./harmony.conf
     SyslogIdentifier=harmony
