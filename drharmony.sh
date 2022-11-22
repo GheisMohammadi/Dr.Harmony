@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Dr.Harmony version
-DrHarmony_Version='0.2'
+DrHarmony_Version='0.3'
 
 cat << "EOF"
  ____       _   _                                        
 |  _ \ _ __| | | | __ _ _ __ _ __ ___   ___  _ __  _   _ 
 | | | | '__| |_| |/ _` | '__| '_ ` _ \ / _ \| '_ \| | | |
 | |_| | |  |  _  | (_| | |  | | | | | | (_) | | | | |_| |
-|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | V0.2
+|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | V0.3
                                                    |___/
 EOF
 
@@ -325,6 +325,30 @@ function createBlsKeys {
     ./hmy keys generate-bls-keys --count $keys_count --shard $shard_num --passphrase
 }
 
+function setupSystemd {
+    echo "    [Unit]
+    Description=Harmony daemon
+    After=network-online.target
+
+    [Service]
+    Type=simple
+    Restart=always
+    RestartSec=1
+    User=harmony
+    WorkingDirectory=/home/harmony
+    ExecStart=/home/harmony/harmony --network $new_node_network_name --config ./harmony.conf
+    SyslogIdentifier=harmony
+    StartLimitInterval=0
+    LimitNOFILE=65536
+    LimitNPROC=65536
+
+    [Install]
+    WantedBy=multi-user.target" > /etc/systemd/system/harmony.service
+
+    sudo chmod 755 /etc/systemd/system/harmony.service
+    sudo systemctl enable harmony.service
+}
+
 function continueInstallNewNode {
     # create bls keys
     createBlsKeys
@@ -343,7 +367,10 @@ function continueInstallNewNode {
     ./harmony config dump ./harmony.conf
 
     echo "run validator ..."
-    ./harmony --network $new_node_network_name --config ./harmony.conf
+    setupSystemd
+    sudo service harmony start
+
+    echo "new node is up and running!" 
 }
 
 function installNewNodeFromBinaryFile {
