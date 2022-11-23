@@ -188,11 +188,11 @@ function askForNetwork {
 
 function installHarmonyDependenciesUsingApt {
     #install harmony deps
-    sudo apt install -y git libgmp-dev  libssl-dev  make gcc g++
+    sudo apt install -y git libgmp-dev  libssl-dev  make gcc g++ jq
 }
 
 function installHarmonyDependenciesUsingYum {
-    sudo yum install -y git glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
+    sudo yum install -y git glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++ jq
 }
 
 function installHarmonyDependenciesUsingBrew {
@@ -227,13 +227,16 @@ function installGo {
         wget $go_url
         sudo tar -C /usr/local -xzvf $go_file_name
         rm $go_file_name
+        sudo ln -sfn /usr/local/go/bin/go /usr/bin/
+        sudo ln -sfn /usr/local/go/bin/gofmt /usr/bin/
         echo "export PATH=\"/usr/local/go/bin:$PATH\"" >> ~/.bashrc
         source ~/.bashrc
     fi     
 
     CHECK_GO_INSTALL=$(go version|grep "go version")
     if [ "$CHECK_GO_INSTALL" = "" ]; then
-        alias go=/usr/local/go/bin/go   
+        alias go=/usr/local/go/bin/go
+        alias gofmt=/usr/local/go/bin/gofmt
     fi
 
     go version
@@ -379,7 +382,7 @@ function continueInstallNewNode {
     fi
 
     echo "dump the config file ..."
-    ./harmony config dump ./harmony.conf
+    ./harmony config dump ./harmony.conf --network $new_node_network_name
 
     echo "run validator ..."
     setupSystemd
@@ -1202,6 +1205,11 @@ function showLiveBlockNumber {
     waitForAnyKey
 }
 
+function serviceLiveLogs {
+    sudo journalctl -u harmony -n 100 -q --no-pager --all -f
+    waitForAnyKey
+}
+
 function nodeWatch {
  
     node_watch_options=(1 "all processes"
@@ -1209,7 +1217,8 @@ function nodeWatch {
                         3 "harmony cpu/ram usage"
                         4 "harmony resource usages"
                         5 "harmony logs"
-                        6 "harmony block number")
+                        6 "harmony service logs"
+                        7 "harmony block number")
 
     node_watch_menu_result="done"
 
@@ -1242,6 +1251,9 @@ function nodeWatch {
                     showLiveHarmonyLogs
                     ;;
                 6)
+                    serviceLiveLogs
+                    ;;
+                7)
                     #while true; do $HMY utility metadata | grep current-block-number; sleep 2; clear; done
                     showLiveBlockNumber
                     ;;
