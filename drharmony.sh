@@ -1380,11 +1380,21 @@ function harmonyService {
 # Adjustments
 #========================================================================
 function revertBeacon {
-  REVERT_TO=26096624
-  REVERT_DO_BEFORE=26096625
-  sudo service harmony stop 
-  ./harmony --revert.beacon --revert.to $REVERT_TO --revert.do-before $REVERT_DO_BEFORE -c harmony.conf
-  sudo service harmony start
+    exec 3>&1;
+    REVERT_TO=$(dialog --nocancel --ok-label "Next" --inputbox "revert to block number?" 0 0 "" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    exec 3>&1;
+    REVERT_DO_BEFORE=$(dialog --nocancel --ok-label "Revert" --inputbox "revert before block number?" 0 0 "" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    sudo service harmony stop 
+    ./harmony --revert.beacon --revert.to $REVERT_TO --revert.do-before $REVERT_DO_BEFORE -c harmony.conf
+    sudo service harmony start
+
+    waitForAnyKey
 }
 
 function adjustments {
@@ -1409,7 +1419,7 @@ function adjustments {
                     adjustSyncMethod
                     ;;
                 2)
-                    echo "this feature is not completed yet, try again later"
+                    revertBeacon
                     ;;
                 *)
                     adjustments_menu_result="back"
@@ -1778,9 +1788,40 @@ function others_2 {
     waitForAnyKey
 }
 
+function compressDB {
+    tar -zcvf db0.tar.gz harmony_db_0/
+
+    for i in {1..4}
+    do
+        DB_PATH="harmony_db_$i"
+        if [ -d "$DB_PATH" ]; then
+            echo "compressing $DB_PATH ..."
+            tar -zcvf "db$i.tar.gz" "$DB_PATH/"
+        fi
+    done
+
+    waitForAnyKey
+}
+
+function decompressDB {
+
+    for i in {0..4}
+    do
+        DB_FILE="db$i.tar.gz"
+        if [ -f "$DB_FILE" ]; then
+            echo "decompressing $DB_FILE ..."
+            tar -zxvf "$DB_FILE"
+        fi
+    done
+
+    waitForAnyKey
+}
+
 function others {
     others_options=(1 "install golang"
-                    2 "restart node")
+                    2 "restart node"
+                    3 "compress database"
+                    4 "decompress database")
 
     others_menu_result="done"
 
@@ -1802,6 +1843,12 @@ function others {
                     ;;
                 2)
                     reboot
+                    ;;
+                3) 
+                    compressDB
+                    ;;
+                4)
+                    decompressDB
                     ;;
                 *)  
                     others_menu_result="back"
