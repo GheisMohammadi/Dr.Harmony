@@ -1820,8 +1820,9 @@ function decompressDB {
 function others {
     others_options=(1 "install golang"
                     2 "restart node"
-                    3 "compress database"
-                    4 "decompress database")
+                    3 "compress database (to: db{0/1/2/3}.tar.gz)"
+                    4 "decompress database (from: db{0/1/2/3}.tar.gz)"
+                    5 "create a service for harmony binary")
 
     others_menu_result="done"
 
@@ -1849,6 +1850,9 @@ function others {
                     ;;
                 4)
                     decompressDB
+                    ;;
+                5)
+                    setupSystemd
                     ;;
                 *)  
                     others_menu_result="back"
