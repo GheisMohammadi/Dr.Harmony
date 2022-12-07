@@ -336,6 +336,11 @@ function createBlsKeys {
 }
 
 function setupSystemd {
+
+    if [ -z "$new_node_network_name" ]; then 
+        askForNetwork
+    fi
+
     echo "
     [Unit]
     Description=Harmony daemon
@@ -347,7 +352,7 @@ function setupSystemd {
     RestartSec=1
     User=$USER
     WorkingDirectory=${HOME%/}
-    ExecStart=${HOME%/}/harmony --network $new_node_network_name --config ./harmony.conf
+    ExecStart=${HOME%/}/harmony --network $new_node_network_name --config './harmony.conf'
     SyslogIdentifier=harmony
     StartLimitInterval=0
     LimitNOFILE=65536
