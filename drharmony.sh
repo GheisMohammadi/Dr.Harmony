@@ -1337,12 +1337,19 @@ function serviceLogs {
     waitForAnyKey
 }
 
+function serviceDetails {
+    sudo systemctl show harmony
+    waitForAnyKey
+}
+
 function harmonyService {
     service_options=(1 "status"
             2 "restart"
             3 "start"
             4 "stop"
-            5 "logs")
+            5 "logs"
+            6 "live logs"
+            7 "details")
 
     service_menu_result="done"
 
@@ -1372,6 +1379,12 @@ function harmonyService {
                     ;;
                 5)
                     serviceLogs
+                    ;;
+                6)
+                    serviceLiveLogs
+                    ;;
+                7)
+                    serviceDetails
                     ;;
                 *)
                     service_menu_result="back"
