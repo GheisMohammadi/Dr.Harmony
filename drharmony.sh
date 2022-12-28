@@ -88,23 +88,10 @@ function waitForAnyKey {
 
 function getUserInput {
     exec 3>&1;
-    result=$(dialog --inputbox test 0 0 2>&1 1>&3);
+    user_input=$(dialog --inputbox $input_msg 0 0 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
-    echo $result $exitcode;
-}
-
-function getUserInput2 {
-    input=$(dialog --stdout --inputbox "What is your username?" 0 0)
-    retval=$?
-
-    case $retval in
-    ${DIALOG_OK-0}) echo "Your username is '$input'.";;
-    ${DIALOG_CANCEL-1}) echo "Cancel pressed.";;
-    ${DIALOG_ESC-255}) echo "Esc pressed.";;
-    ${DIALOG_ERROR-255}) echo "Dialog error";;
-    *) echo "Unknown error $retval"
-    esac
+    echo $user_input $exitcode;
 }
 
 #========================================================================
