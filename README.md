@@ -3,7 +3,7 @@
 |  _ \ _ __| | | | __ _ _ __ _ __ ___   ___  _ __  _   _ 
 | | | | '__| |_| |/ _` | '__| '_ ` _ \ / _ \| '_ \| | | |
 | |_| | |  |  _  | (_| | |  | | | | | | (_) | | | | |_| |
-|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | v0.2
+|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | v0.3.2
                                                    |___/ 
 ```
 # Dr.Harmony
@@ -28,7 +28,7 @@ curl --silent -O "https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/ma
 - and then
 
 ```
-./drharmony.sh
+drharmony
 ```
 
 
@@ -43,4 +43,4 @@ See [`CONTRIBUTING`](CONTRIBUTING.md) for details.
 
 
 # Development Status
-Still under development, first release will be available for public around 2022, December
+Still under development, first release will be available for public sometimes around Q2-2023
