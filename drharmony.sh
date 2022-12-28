@@ -1697,16 +1697,16 @@ function inspect {
     fi
 
     #block is behind
-    is_syncing=$(curl -d '{
+    diff_to_sync=$(curl -d '{
         "jsonrpc":"2.0",
         "method":"hmy_syncing",
         "params":[],
         "id":1
-    }' -H 'Content-Type:application/json' -X POST '0.0.0.0:9500' 2>/dev/null | jq -r ".result")
-    if [ "$is_syncing" = "false" ]; then
+    }' -H 'Content-Type:application/json' -X POST '0.0.0.0:9500' 2>/dev/null | jq -r ".result.difference")
+    if [ $diff_to_sync -lt 9 ]; then
         echo "[OK] syncing status"
     else
-        echo "[X ] syncing status [ node is syncing ]"
+        echo "[X ] syncing status [ node is not synced yet ($diff_to_sync blocks difference) ]"
     fi
 
     #service respond time -> send simple query and check time
