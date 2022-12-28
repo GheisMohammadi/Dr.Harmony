@@ -58,7 +58,7 @@ fi
 
 
 HARMONY=$(which harmony)
-LOGS_DIR=""
+LOGS_DIR="${a%/*}/latest"
 if [ -z "$HARMONY" ]; then
     HARMONY=./harmony
     LOGS_DIR="./latest"
@@ -1601,15 +1601,17 @@ function inspect {
 
     #how many errors in logs
     #how many syncing errors in logs
-    if [ -f "${LOGS_DIR}/zerolog-harmony.log" ]; then
-        n_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -c "error")
+    exist=$(sudo ls -a ${LOGS_DIR}/zerolog-harmony.log) 
+    if [ "$exist" == "${LOGS_DIR}/zerolog-harmony.log" ]; then
+    #if [ -f "${LOGS_DIR}/zerolog-harmony.log" ]; then       #reason for not using this:  some protected folder can't be checked by -f for file existence
+        n_errors=$(sudo cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -c "error")
         if [ $n_errors -eq 0 ]; then
         echo "[OK] errors in log"
         else 
         echo "[X ] errors in log [ there are ${n_errors} errors in log file ]"
         fi
 
-        n_staged_sync_errors=$(cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -E "error" | grep -c "STAGED_SYNC" )
+        n_staged_sync_errors=$(sudo cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -E "error" | grep -c "STAGED_SYNC" )
         if [ $n_staged_sync_errors -eq 0 ]; then
         echo "[OK] staged sync errors in log"
         else 
@@ -1636,7 +1638,7 @@ function inspect {
     fi
 
     #too many log files
-    num_archived_log_files=$(ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
+    num_archived_log_files=$(sudo ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
     if [ "$num_archived_log_files" -gt 10 ]; then
         echo "[X ] archived logs count [ too many archived logs ]" 
     else
