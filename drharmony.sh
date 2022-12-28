@@ -1541,7 +1541,7 @@ function checkSecurity {
 
     #ufw status
     ufw_status=$(sudo ufw status 2>/dev/null | grep "Status: active")
-    if [ -z "$ufw_status" ]; then
+    if [ ! -z "$ufw_status" ]; then
         echo "[OK] firewall status "
         
         #check ufw open ports 
@@ -1550,7 +1550,7 @@ function checkSecurity {
         if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
             echo "[OK] firewall ports should be matched with listening ports"
         else
-            echo "[X ] firewall ports should be matched with listening ports [$num_open_ports ports are open by harmony service and $num_harmony_listening_ports ports are allowed by firewall]"
+            echo "[X ] firewall ports should be matched with listening ports [$num_harmony_listening_ports ports are open by harmony service and $num_open_ports ports are allowed by firewall]"
         fi
     else
         echo "[X ] firewall status [ firewall is not active ]"
