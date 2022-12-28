@@ -1057,11 +1057,11 @@ function showFullHardwareInfo {
 function showListeningPorts {
     echo "harmony listening ports"
     echo "====================================================="
-    sudo lsof -i -P -n | grep LISTEN | grep harmony
+    sudo lsof -i -P -n | grep -E harmony | grep LISTEN
     echo "====================================================="
     echo "other listening ports"
     echo "====================================================="
-    sudo lsof -i -P -n | grep LISTEN | grep -v harmony
+    sudo lsof -i -P -n | grep -v harmony | grep LISTEN
 
     waitForAnyKey
 }
@@ -1546,7 +1546,7 @@ function checkSecurity {
         
         #check ufw open ports 
         num_open_ports=$(sudo ufw status 2>/dev/null | grep -c "ALLOW")
-        num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep harmony | grep -c LISTEN)
+        num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -E harmony | grep -c LISTEN)
         if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
             echo "[OK] firewall ports should be matched with listening ports"
         else
@@ -1612,9 +1612,9 @@ function inspect {
     #how many errors today
     
     #how many errors in service logs
-    service_status=$(systemctl status harmony.service 2>/dev/null | grep -c "active (running)")
+    service_status=$(sudo systemctl status harmony.service 2>/dev/null | grep -c "active (running)")
     if [ $service_status -gt 0 ]; then
-        service_errors=$(journalctl -u harmony.service --no-pager -q -n 1000 | grep -c -E "error|fail")
+        service_errors=$(sudo journalctl -u harmony.service --no-pager -q -n 1000 | grep -c -E "error|fail")
         if [ $service_errors -eq 0 ]; then
             echo "[OK] harmony service status"
         else 
@@ -1627,7 +1627,7 @@ function inspect {
     #too many log files
     num_archived_log_files=$(sudo ls "${LOGS_DIR}" -a 2>/dev/null | grep ".log.gz" | wc -l) 
     if [ "$num_archived_log_files" -gt 10 ]; then
-        echo "[X ] archived logs count [ too many archived logs ]" 
+        echo "[X ] archived logs count [ too many archived logs ("$num_archived_log_files" log files) ]" 
     else
         echo "[OK] archived logs count"
     fi
@@ -1651,7 +1651,7 @@ function inspect {
 
     #open ports
     num_other_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -v harmony | grep -c LISTEN)
-    if [ "$num_other_listening_ports" -gt 1 ]; then
+    if [ "$num_other_listening_ports" -gt 3 ]; then
         echo "[X ] open ports [ rather than harmony ports, other $num_other_listening_ports ports are open ]" 
     else
         echo "[OK] open ports"
