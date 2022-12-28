@@ -1,16 +1,18 @@
 #!/bin/bash
 
 # Dr.Harmony version
-DrHarmony_Version='0.3.1-Dec2022'
+DrHarmony_Version=$(cat ./version)
 
 cat << "EOF"
  ____       _   _                                        
 |  _ \ _ __| | | | __ _ _ __ _ __ ___   ___  _ __  _   _ 
 | | | | '__| |_| |/ _` | '__| '_ ` _ \ / _ \| '_ \| | | |
 | |_| | |  |  _  | (_| | |  | | | | | | (_) | | | | |_| |
-|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, | V0.3.1-Dec2022
+|____/|_|  |_| |_|\__,_|_|  |_| |_| |_|\___/|_| |_|\__, |
                                                    |___/
 EOF
+echo "                 Version: $DrHarmony_Version"
+echo " "
 
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 PUBLIC_IP=$(dig @resolver3.opendns.com myip.opendns.com +short)
@@ -21,6 +23,20 @@ BACKTITLE="Harmony Node Utilities - Dr.Harmony-V$DrHarmony_Version"
 MENU="Choose one of the following options:"
 menu_result="notready"
 
+function checkVersion {
+    RemoteVersion=$(curl --silent https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/version)
+    if [ "$DrHarmony_Version" != "$RemoteVersion" ]; then
+        echo "there is a new version:$RemoteVersion, let's update DrHarmony to newest version..."
+        rm ./DrHarmony.sh
+        curl --silent -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.sh && sudo chmod +x ./drharmony.sh
+        rm version
+        curl --silent -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/version
+        sudo ./drharmony.sh
+        exit
+    fi
+}
+
+checkVersion
 #========================================================================
 # init binaries
 #========================================================================
@@ -61,7 +77,6 @@ if [ -z "$HARMONY" ]; then
         fi
     fi
 fi
-
 
 #========================================================================
 # User Inputs
