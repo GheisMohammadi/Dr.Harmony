@@ -1634,16 +1634,16 @@ function inspect {
 
     #ufw status
     ufw_status=$(sudo ufw status 2>/dev/null | grep "Status: active")
-    if [ -z "$ufw_status" ]; then
+    if [ ! -z "$ufw_status" ]; then
         echo "[OK] firewall status "
         
         #check ufw open ports 
         num_open_ports=$(sudo ufw status 2>/dev/null | grep -c "ALLOW")
-        num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep harmony | grep -c LISTEN)
+        num_harmony_listening_ports=$(sudo lsof -i -P -n 2>/dev/null | grep -E harmony | grep -c LISTEN)
         if [ "$num_open_ports" == "$num_harmony_listening_ports" ]; then
             echo "[OK] firewall ports should be matched with listening ports"
         else
-            echo "[X ] firewall ports should be matched with listening ports [$num_open_ports ports are open by harmony service and $num_harmony_listening_ports ports are allowed by firewall]"
+            echo "[X ] firewall ports should be matched with listening ports [$num_harmony_listening_ports ports are open by harmony service and $num_open_ports ports are allowed by firewall]"
         fi
     else
         echo "[X ] firewall status [ firewall is not active ]"
