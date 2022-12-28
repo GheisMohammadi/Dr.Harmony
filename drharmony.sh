@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dr.Harmony version
-DrHarmony_Version=$(cat ./version)
+DrHarmony_Version=$(cat ./drharmony.v)
 
 cat << "EOF"
  ____       _   _                                        
@@ -24,13 +24,13 @@ MENU="Choose one of the following options:"
 menu_result="notready"
 
 function checkVersion {
-    RemoteVersion=$(curl --silent https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/version)
+    RemoteVersion=$(curl --silent https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.v)
     if [ "$DrHarmony_Version" != "$RemoteVersion" ]; then
         echo "there is a new version:$RemoteVersion, let's update DrHarmony to newest version..."
-        rm ./DrHarmony.sh
+        rm ./drharmony.sh
         curl --silent -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.sh && sudo chmod +x ./drharmony.sh
-        rm version
-        curl --silent -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/version
+        rm ./drharmony.v
+        curl --silent -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.v
         sudo ./drharmony.sh
         exit
     fi

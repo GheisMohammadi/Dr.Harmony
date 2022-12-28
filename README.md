@@ -22,7 +22,7 @@ all requirements will be installed automatically
 - download drharmony to your server:
 
 ```
-curl --silent -O https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/drharmony.sh && sudo chmod +x ./drharmony.sh && alias drharmony="$(pwd)/drharmony.sh"
+curl --silent -O "https://raw.githubusercontent.com/GheisMohammadi/Dr.Harmony/main/{drharmony.sh,drharmony.v}" && sudo chmod +x ./drharmony.sh && alias drharmony="$(pwd)/drharmony.sh"
 ```
 
 - and then

@@ -3,3 +3,5 @@ tmp/*
 tmp
 hmy
 ./hmy
+./harmony
+./test*
