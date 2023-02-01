@@ -1344,6 +1344,11 @@ function serviceDetails {
     waitForAnyKey
 }
 
+function editServiceDetails {
+    sudo nano /etc/systemd/system/harmony.service 
+    waitForAnyKey
+}
+
 function harmonyService {
     service_options=(1 "status"
             2 "restart"
@@ -1351,7 +1356,8 @@ function harmonyService {
             4 "stop"
             5 "logs"
             6 "live logs"
-            7 "details")
+            7 "details"
+            8 "edit systemd details")
 
     service_menu_result="done"
 
@@ -1387,6 +1393,9 @@ function harmonyService {
                     ;;
                 7)
                     serviceDetails
+                    ;;
+                8)
+                    editServiceDetails
                     ;;
                 *)
                     service_menu_result="back"
