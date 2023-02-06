@@ -1346,6 +1346,7 @@ function serviceDetails {
 
 function editServiceDetails {
     sudo nano /etc/systemd/system/harmony.service 
+    sudo systemctl daemon-reload
     waitForAnyKey
 }
 
