@@ -640,6 +640,29 @@ function getTransactionReceipt {
     waitForAnyKey
 }
 
+function getBlocksAndTxCount {
+    exec 3>&1;
+    nfrom=$(dialog --nocancel --ok-label "Next" --inputbox "from block number" 0 0 "0x44" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    exec 3>&1;
+    nto=$(dialog --nocancel --ok-label "Next" --inputbox "to block number" 0 0 "0x50" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+
+    for ((i = nfrom; i <= nto; i++))
+    do
+        blknum=0x$(printf "%x\n" $i)
+        echo "blk: $blknum -> txs:" 
+        curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockTransactionCountByNumber\",\"params\":[\"${blknum}\"],\"id\":1}"
+    done
+
+    waitForAnyKey
+}
+
 function ethGetBalance {
     exec 3>&1;
     accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
@@ -680,7 +703,8 @@ function blockchain {
                         7 "get transaction by hash"
                         8 "get transaction by block number and index"
                         9 "get transaction by block hash and index"
-                        10 "get transaction receipt")
+                        10 "get transaction receipt"
+                        11 "get blocks and tx count")
 
     blockchain_menu_result="done"
 
@@ -727,6 +751,9 @@ function blockchain {
                 ;;
             10)
                 getTransactionReceipt
+                ;;
+            11)
+                getBlocksAndTxCount
                 ;;
             *)  
                 blockchain_menu_result="back"
