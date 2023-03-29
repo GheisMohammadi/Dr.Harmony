@@ -565,7 +565,7 @@ function getBlockByNumber {
     exec 3>&-;
 
     URL="0.0.0.0:9500"
-    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByNumber\",\"params\":[\"${blknumber}\", \"true\"],\"id\":1}"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByNumber\",\"params\":[\"${blknumber}\", true],\"id\":1}"
     
     waitForAnyKey
 }
@@ -577,7 +577,7 @@ function getBlockByHash {
     exec 3>&-;
 
     URL="0.0.0.0:9500"
-    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByHash\",\"params\":[\"${blkhash}\"],\"id\":1}"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByHash\",\"params\":[\"${blkhash}\", true],\"id\":1}"
     
     waitForAnyKey
 }
@@ -594,7 +594,7 @@ function getTransactionByHash {
     waitForAnyKey
 }
 
-function getTransactionByBlock {
+function getTransactionByBlockNumber {
     exec 3>&1;
     blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "0x4" 2>&1 1>&3);
     exitcode=$?;
@@ -623,7 +623,7 @@ function getTransactionByBlockHash {
     exec 3>&-;
 
     URL="0.0.0.0:9500"
-    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByBlockNumberAndIndex\",\"params\":[\"${blkhash}\",\"${txindex}\"],\"id\":1}"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByBlockHashAndIndex\",\"params\":[\"${blkhash}\",\"${txindex}\"],\"id\":1}"
     
     waitForAnyKey
 }
@@ -676,9 +676,11 @@ function blockchain {
                         3 "eth get balance"
                         4 "gas price"
                         5 "block by number"
-                        6 "get transaction by hash"
-                        7 "get transaction by block number and index"
-                        8 "get transaction by block hash and index")
+                        6 "block by hash"
+                        7 "get transaction by hash"
+                        8 "get transaction by block number and index"
+                        9 "get transaction by block hash and index"
+                        10 "get transaction receipt")
 
     blockchain_menu_result="done"
 
@@ -718,7 +720,7 @@ function blockchain {
                 getTransactionByHash
                 ;;
             8)
-                getTransactionByBlock
+                getTransactionByBlockNumber
                 ;;
             9)
                 getTransactionByBlockHash
