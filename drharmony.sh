@@ -121,6 +121,24 @@ function checkRequirements {
         fi
     fi
 
+    if [ -z "$(command -v jq)" ]; then
+        if [ -n "$(command -v apt-get)" ]; then
+            echo "installing jq (apt) ..."
+            sudo apt-get -y update
+            sudo apt-get install -y jq
+        elif [ -n "$(command -v yum)" ]; then
+            echo "installing jq (yum) ..."
+            sudo yum -y update
+            sudo yum install -y jq
+        elif [ -n "$(command -v brew)" ]; then
+            echo "installing jq (brew) ..."
+            sudo brew -y update
+            sudo brew install -y jq
+        else 
+            echo "install dependencies failed, it needs either apt, yum or brew"
+        fi
+    fi
+
     if [ -f "$HMY" ]; then
         echo "hmy command is ready"
     else
@@ -540,6 +558,88 @@ function hmyGetBalance {
     waitForAnyKey
 }
 
+function getBlockByNumber {
+    exec 3>&1;
+    blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "0x66" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByNumber\",\"params\":[\"${blknumber}\", \"true\"],\"id\":1}"
+    
+    waitForAnyKey
+}
+
+function getBlockByHash {
+    exec 3>&1;
+    blkhash=$(dialog --nocancel --ok-label "Next" --inputbox "block hash" 0 0 "0x660fe701f580ffebfcfb4af1836c9929c1fd0014d8d79d60749fecf52df7a90d" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByHash\",\"params\":[\"${blkhash}\"],\"id\":1}"
+    
+    waitForAnyKey
+}
+
+function getTransactionByHash {
+    exec 3>&1;
+    txHash=$(dialog --nocancel --ok-label "Next" --inputbox "transaction hash" 0 0 "0x1dff358dad4d0fc95b11acc9826b190d8b7971ac26b3f7ebdee83c10cafaf86f" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByHash\",\"params\":[\"${txHash}\"],\"id\":1}"
+    
+    waitForAnyKey
+}
+
+function getTransactionByBlock {
+    exec 3>&1;
+    blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "0x4" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    exec 3>&1;
+    txindex=$(dialog --nocancel --ok-label "Next" --inputbox "transaction index" 0 0 "0x0" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByBlockNumberAndIndex\",\"params\":[\"${blknumber}\",\"${txindex}\"],\"id\":1}"
+    
+    waitForAnyKey
+}
+
+function getTransactionByBlockHash {
+    exec 3>&1;
+    blkhash=$(dialog --nocancel --ok-label "Next" --inputbox "block hash" 0 0 "0x428ead93e632d5255ea3d1fb61b02ab8493cf562a398af2159c33ecd53c62c16" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    exec 3>&1;
+    txindex=$(dialog --nocancel --ok-label "Next" --inputbox "transaction index" 0 0 "0x0" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByBlockNumberAndIndex\",\"params\":[\"${blkhash}\",\"${txindex}\"],\"id\":1}"
+    
+    waitForAnyKey
+}
+
+function getTransactionReceipt {
+    exec 3>&1;
+    txHash=$(dialog --nocancel --ok-label "Next" --inputbox "transaction hash" 0 0 "0x2fa714e40389cbbceda0f77e707035c0ec8aa940e8e10c0d445813177ea71e7d" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    URL="0.0.0.0:9500"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionReceipt\",\"params\":[\"${txHash}\"],\"id\":1}"
+    
+    waitForAnyKey
+}
+
 function ethGetBalance {
     exec 3>&1;
     accAddress=$(dialog --nocancel --ok-label "Next" --inputbox "account address" 0 0 "one..." 2>&1 1>&3);
@@ -574,7 +674,11 @@ function blockchain {
     blockchain_options=(1 "account transactions history"
                         2 "check account balance"
                         3 "eth get balance"
-                        4 "gas price")
+                        4 "gas price"
+                        5 "block by number"
+                        6 "get transaction by hash"
+                        7 "get transaction by block number and index"
+                        8 "get transaction by block hash and index")
 
     blockchain_menu_result="done"
 
@@ -603,6 +707,24 @@ function blockchain {
                 ;;
             4)
                 showGasPrice
+                ;;
+            5)
+                getBlockByNumber
+                ;;
+            6)
+                getBlockByHash
+                ;;
+            7)
+                getTransactionByHash
+                ;;
+            8)
+                getTransactionByBlock
+                ;;
+            9)
+                getTransactionByBlockHash
+                ;;
+            10)
+                getTransactionReceipt
                 ;;
             *)  
                 blockchain_menu_result="back"
