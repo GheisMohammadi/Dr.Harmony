@@ -560,12 +560,14 @@ function hmyGetBalance {
 
 function getBlockByNumber {
     exec 3>&1;
-    blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "0x66" 2>&1 1>&3);
+    blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "123" 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
+    blknum=0x$(printf "%x\n" $blknumber)
+
     URL="0.0.0.0:9500"
-    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByNumber\",\"params\":[\"${blknumber}\", true],\"id\":1}"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockByNumber\",\"params\":[\"${blknum}\", true],\"id\":1}"
     
     waitForAnyKey
 }
@@ -596,9 +598,11 @@ function getTransactionByHash {
 
 function getTransactionByBlockNumber {
     exec 3>&1;
-    blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "0x4" 2>&1 1>&3);
+    blknumber=$(dialog --nocancel --ok-label "Next" --inputbox "block number" 0 0 "123" 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
+
+    blknum=0x$(printf "%x\n" $blknumber)
 
     exec 3>&1;
     txindex=$(dialog --nocancel --ok-label "Next" --inputbox "transaction index" 0 0 "0x0" 2>&1 1>&3);
@@ -606,7 +610,7 @@ function getTransactionByBlockNumber {
     exec 3>&-;
 
     URL="0.0.0.0:9500"
-    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByBlockNumberAndIndex\",\"params\":[\"${blknumber}\",\"${txindex}\"],\"id\":1}"
+    curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getTransactionByBlockNumberAndIndex\",\"params\":[\"${blknum}\",\"${txindex}\"],\"id\":1}"
     
     waitForAnyKey
 }
@@ -642,12 +646,12 @@ function getTransactionReceipt {
 
 function getBlocksAndTxCount {
     exec 3>&1;
-    nfrom=$(dialog --nocancel --ok-label "Next" --inputbox "from block number" 0 0 "0x44" 2>&1 1>&3);
+    nfrom=$(dialog --nocancel --ok-label "Next" --inputbox "from block number" 0 0 "123" 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
     exec 3>&1;
-    nto=$(dialog --nocancel --ok-label "Next" --inputbox "to block number" 0 0 "0x50" 2>&1 1>&3);
+    nto=$(dialog --nocancel --ok-label "Next" --inputbox "to block number" 0 0 "456" 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
@@ -656,8 +660,8 @@ function getBlocksAndTxCount {
     for ((i = nfrom; i <= nto; i++))
     do
         blknum=0x$(printf "%x\n" $i)
-        echo "blk: $blknum -> txs:" 
-        curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockTransactionCountByNumber\",\"params\":[\"${blknum}\"],\"id\":1}"
+        txxCount=$(curl $URL -H "Content-Type: application/json" -X POST --data "{\"jsonrpc\":\"2.0\",\"method\":\"hmy_getBlockTransactionCountByNumber\",\"params\":[\"${blknum}\"],\"id\":1}" 2>/dev/null | jq -r ".result")
+        echo "blk: $i ($blknum) -> txs count: ${txxCount}" 
     done
 
     waitForAnyKey
