@@ -1593,17 +1593,20 @@ function revertBeacon {
     # if harmony binary path is wrong or it doesn't exist
     if [ ! -f $HARMONY_BINARY_PATH ]; then
         echo "binary path is wrong or harmony binary doesn't exist in this path"
+        waitForAnyKey
         return
     fi
 
     exec 3>&1;
-    HARMONY_DB_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony database path" 0 0 "~" 2>&1 1>&3);
+    HARMONY_DB_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony database path" 0 0 $HOME 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
     # if harmony database path is wrong or it doesn't exist
-    if [ ! -d "$HARMONY_DB_PATH/harmony_db_0" ]; then
+    # don't add "" to path, because "-d" flag only works if path doesn't have ""
+    if [ ! -d $HARMONY_DB_PATH/harmony_db_0 ]; then
         echo "db path is wrong or harmony_db_0 doesn't exist in this path"
+        waitForAnyKey
         return
     fi
 
