@@ -43,11 +43,11 @@ checkVersion
 HMY=$(which hmy)
 if [ -z "$HMY" ]; then
     HMY=./hmy
-    if [[ ! -f "$HMY" ]]; then
+    if [[ ! -f $HMY ]]; then
         HMY=/usr/sbin/hmy
-        if [[ ! -f "$HMY" ]]; then
+        if [[ ! -f $HMY ]]; then
             HMY=~/hmy
-            if [[ ! -f "$HMY" ]]; then
+            if [[ ! -f $HMY ]]; then
                 # hmy is not installed
                 HMY=""
                 echo "hmy not found."
@@ -62,13 +62,13 @@ LOGS_DIR="${a%/*}/latest"
 if [ -z "$HARMONY" ]; then
     HARMONY=./harmony
     LOGS_DIR="./latest"
-    if [[ ! -f "$HARMONY" ]]; then
+    if [[ ! -f $HARMONY ]]; then
         HARMONY=/usr/sbin/harmony
         LOGS_DIR="./usr/sbin"
-        if [[ ! -f "$HARMONY" ]]; then
+        if [[ ! -f $HARMONY ]]; then
             HARMONY=~/harmony
             LOGS_DIR="~"
-            if [[ ! -f "$HARMONY" ]]; then
+            if [[ ! -f $HARMONY ]]; then
                 # harmony is not installed
                 HARMONY=""
                 LOGS_DIR=""
@@ -139,7 +139,7 @@ function checkRequirements {
         fi
     fi
 
-    if [ -f "$HMY" ]; then
+    if [ -f $HMY ]; then
         echo "hmy command is ready"
     else
         unameOut="$(uname -s)"
@@ -1616,7 +1616,7 @@ function revertBeacon {
     exec 3>&-;
 
     # if harmony config file path is wrong or it doesn't exist
-    if [ ! -f "$HARMONY_CONFIG_PATH" ]; then
+    if [ ! -f $HARMONY_CONFIG_PATH ]; then
         echo "config path is wrong or harmony.conf doesn't exist in this path"
         return
     fi
@@ -1821,7 +1821,7 @@ function inspect {
     #how many syncing errors in logs
     exist=$(sudo ls -a ${LOGS_DIR}/zerolog-harmony.log) 
     if [ "$exist" == "${LOGS_DIR}/zerolog-harmony.log" ]; then
-    #if [ -f "${LOGS_DIR}/zerolog-harmony.log" ]; then       #reason for not using this:  some protected folder can't be checked by -f for file existence
+    #if [ -f ${LOGS_DIR}/zerolog-harmony.log ]; then       #reason for not using this:  some protected folder can't be checked by -f for file existence
         n_errors=$(sudo cat ${LOGS_DIR}/zerolog-harmony.log 2>/dev/null | grep -c "error")
         if [ $n_errors -eq 0 ]; then
         echo "[OK] errors in log"
@@ -2061,7 +2061,7 @@ function decompressDB {
     for i in {0..4}
     do
         DB_FILE="db$i.tar.gz"
-        if [ -f "$DB_FILE" ]; then
+        if [ -f $DB_FILE ]; then
             echo "decompressing $DB_FILE ..."
             tar -zxvf "$DB_FILE"
         fi
