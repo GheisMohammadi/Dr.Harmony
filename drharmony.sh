@@ -1565,19 +1565,82 @@ function harmonyService {
 # Adjustments
 #========================================================================
 function revertBeacon {
+
+    cur_bn=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmyv2_blockNumber",
+        "params":[],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST '0.0.0.0:9500' 2>/dev/null | jq -r ".result")
+
+    curShardBlock=$($HMY utility metadata | jq -r '.result["current-block-number"]')
+
+    if [ $cur_bn -gt 10 ]
+        def_revert_to_block=$((cur_bn-10))
+        def_before_block=$((cur_bn+10))
+    else
+        def_revert_to_block=0
+        def_before_block=$curShardBlock
+    fi
+
+    curDir=$PWD
+
     exec 3>&1;
-    REVERT_TO=$(dialog --nocancel --ok-label "Next" --inputbox "revert to block number?" 0 0 "" 2>&1 1>&3);
+    HARMONY_BINARY_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony binary file path" 0 0 "/usr/sbin/harmony" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # if harmony binary path is wrong or it doesn't exist
+    if [ ! -f $HARMONY_BINARY_PATH ]; then
+        echo "binary path is wrong or harmony binary doesn't exist in this path"
+        return
+    fi
+
+    exec 3>&1;
+    HARMONY_DB_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony database path" 0 0 "~" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # if harmony database path is wrong or it doesn't exist
+    if [ ! -f "$HARMONY_DB_PATH/harmony_db_0" ]; then
+        echo "db path is wrong or harmony_db_0 doesn't exist in this path"
+        return
+    fi
+
+    exec 3>&1;
+    HARMONY_CONFIG_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony config file path" 0 0 "~/harmony.conf" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # if harmony config file path is wrong or it doesn't exist
+    if [ ! -f "$HARMONY_CONFIG_PATH" ]; then
+        echo "config path is wrong or harmony.conf doesn't exist in this path"
+        return
+    fi
+
+    exec 3>&1;
+    REVERT_TO=$(dialog --nocancel --ok-label "Next" --inputbox "revert to what block number? (should be less than current height)" 0 0 "$def_revert_to_block" 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
     exec 3>&1;
-    REVERT_DO_BEFORE=$(dialog --nocancel --ok-label "Revert" --inputbox "revert before block number?" 0 0 "" 2>&1 1>&3);
+    REVERT_DO_BEFORE=$(dialog --nocancel --ok-label "Revert" --inputbox "revert before block number? (should be bigger than current height)" 0 0 "$def_before_block" 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
-    sudo service harmony stop 
-    ./harmony --revert.beacon --revert.to $REVERT_TO --revert.do-before $REVERT_DO_BEFORE -c harmony.conf
-    sudo service harmony start
+    # if harmony service is running, stop it first, otherwise we can't get access to resources
+    sudo systemctl stop harmony.service 
+
+    cd $HARMONY_DB_PATH
+    if [ ! -f ./harmony ]; then
+        sudo cp $HARMONY_BINARY_PATH ./
+    fi
+
+    # a successfull sample on the node stuck on block 21964205
+    # ./harmony --revert.beacon --revert.to 21964200 --revert.do-before 21964209 -c ~/harmony.conf
+    ./harmony --revert.beacon --revert.to $REVERT_TO --revert.do-before $REVERT_DO_BEFORE -c $HARMONY_CONFIG_PATH
+
+    cd $curDir
 
     waitForAnyKey
 }
