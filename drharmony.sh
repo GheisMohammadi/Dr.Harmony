@@ -1575,7 +1575,7 @@ function revertBeacon {
 
     curShardBlock=$($HMY utility metadata | jq -r '.result["current-block-number"]')
 
-    if [ $cur_bn -gt 10 ]
+    if [ $cur_bn -gt 10 ]; then
         def_revert_to_block=$((cur_bn-10))
         def_before_block=$((cur_bn+10))
     else
