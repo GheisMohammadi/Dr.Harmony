@@ -1602,7 +1602,7 @@ function revertBeacon {
     exec 3>&-;
 
     # if harmony database path is wrong or it doesn't exist
-    if [ ! -f "$HARMONY_DB_PATH/harmony_db_0" ]; then
+    if [ ! -d "$HARMONY_DB_PATH/harmony_db_0" ]; then
         echo "db path is wrong or harmony_db_0 doesn't exist in this path"
         return
     fi
