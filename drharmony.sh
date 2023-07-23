@@ -1586,7 +1586,7 @@ function revertBeacon {
     curDir=$PWD
 
     exec 3>&1;
-    HARMONY_BINARY_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony binary file path" 0 0 "/usr/sbin/harmony" 2>&1 1>&3);
+    HARMONY_BINARY_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony binary file path" 0 0 /usr/sbin/harmony 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
@@ -1611,13 +1611,14 @@ function revertBeacon {
     fi
 
     exec 3>&1;
-    HARMONY_CONFIG_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony config file path" 0 0 "~/harmony.conf" 2>&1 1>&3);
+    HARMONY_CONFIG_PATH=$(dialog --nocancel --ok-label "Next" --inputbox "harmony config file path" 0 0 $HOME/harmony.conf 2>&1 1>&3);
     exitcode=$?;
     exec 3>&-;
 
     # if harmony config file path is wrong or it doesn't exist
     if [ ! -f $HARMONY_CONFIG_PATH ]; then
         echo "config path is wrong or harmony.conf doesn't exist in this path"
+        waitForAnyKey
         return
     fi
 
@@ -1644,6 +1645,16 @@ function revertBeacon {
     ./harmony --revert.beacon --revert.to $REVERT_TO --revert.do-before $REVERT_DO_BEFORE -c $HARMONY_CONFIG_PATH
 
     cd $curDir
+
+    waitForAnyKey
+
+    exec 3>&1;
+    start_harmony_service=$(dialog --yesno "start harmony service?" 0 0 2>&1 1>&3);
+    run_harmony=$?;
+    exec 3>&-;
+    if [ $run_harmony -eq 1 ]; then
+        sudo systemctl start harmony.service 
+    fi
 
     waitForAnyKey
 }
