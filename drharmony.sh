@@ -1198,6 +1198,11 @@ function showNetworkInfo {
     waitForAnyKey
 }
 
+function showConsensusInfo {
+    $HMY utility metadata | jq -e ".result.consensus"
+    waitForAnyKey
+}
+
 function showHeaders {
     while true; do $HMY blockchain latest-headers ; sleep 1; done
     waitForAnyKey
@@ -1229,12 +1234,13 @@ function nodeInfo {
                   4 "chain info"
                   5 "block number"
                   6 "headers"
-                  7 "disk info"
-                  8 "OS info"
-                  9 "binaries info"
-                  10 "EC2 info"
-                  11 "Full hardware info"
-                  12 "listening ports")
+                  7 "consensus"
+                  8 "disk info"
+                  9 "OS info"
+                  10 "binaries info"
+                  11 "EC2 info"
+                  12 "Full hardware info"
+                  13 "listening ports")
 
     info_menu_result="done"
 
@@ -1270,21 +1276,24 @@ function nodeInfo {
                     showHeaders
                     ;;
                 7)
-                    showDiskInfo
+                    showConsensusInfo
                     ;;
                 8)
-                    showUbuntuRelease
+                    showDiskInfo
                     ;;
                 9)
-                    showBinariesInfo
+                    showUbuntuRelease
                     ;;
                 10)
-                    showEc2Info
+                    showBinariesInfo
                     ;;
                 11)
-                    showFullHardwareInfo
+                    showEc2Info
                     ;;
                 12)
+                    showFullHardwareInfo
+                    ;;
+                13)
                     showListeningPorts
                     ;;
                 *)
@@ -1367,6 +1376,26 @@ function showLiveBlockNumber {
     waitForAnyKey
 }
 
+#    "consensus": {
+#      "blocknum": 22094253,
+#      "finality": 62,
+#      "mode": "Listening",
+#      "phase": "Announce",
+#      "viewChangeId": 22098940,
+#      "viewId": 22099119
+#    }
+function showLiveConsensus {
+    # run for 10 seconds
+    for i in {1..5}
+    do
+        clear
+        echo "$i seconds ..."
+        $HMY utility metadata | jq -e ".result.consensus"
+        sleep 2
+    done
+    waitForAnyKey
+}
+
 function serviceLiveLogs {
     sudo journalctl -u harmony -n 100 -q --no-pager --all -f
     waitForAnyKey
@@ -1380,7 +1409,8 @@ function nodeWatch {
                         4 "harmony resource usages"
                         5 "harmony logs"
                         6 "harmony service logs"
-                        7 "harmony block number")
+                        7 "harmony block number"
+                        8 "harmony live consensus")
 
     node_watch_menu_result="done"
 
@@ -1418,6 +1448,9 @@ function nodeWatch {
                 7)
                     #while true; do $HMY utility metadata | grep current-block-number; sleep 2; clear; done
                     showLiveBlockNumber
+                    ;;
+                8)
+                    showLiveConsensus
                     ;;
                 *)
                     node_watch_menu_result="back"
