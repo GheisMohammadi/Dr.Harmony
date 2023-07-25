@@ -1792,7 +1792,7 @@ function adjustments {
                 2)
                     revertBeacon
                     ;;
-                2)
+                3)
                     revertShard
                     ;;
                 *)
