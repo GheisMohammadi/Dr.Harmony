@@ -2226,12 +2226,102 @@ function decompressDB {
     waitForAnyKey
 }
 
+function calculateHF {
+
+    exec 3>&1;
+    n_epochs=$(dialog --nocancel --ok-label "Next" --inputbox "how many epochs?" 0 0 "20" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    exec 3>&1;
+    block_secs=$(dialog --nocancel --ok-label "Next" --inputbox "block finality (seconds)?" 0 0 "2" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    endpoint="https://api.s0.t.hmny.io"
+
+    clear
+    echo "fetching block number ..."
+    cur_bn=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmyv2_blockNumber",
+        "params":[],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+
+    echo "fetching epoch number ..."
+    cur_epoch=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmyv2_getEpoch",
+        "params":[],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+
+    echo "Block Number: $cur_bn"
+    echo "Epoch Number: $cur_epoch"
+
+    curr_epoch_last_block=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmy_epochLastBlock",
+        "params":['$cur_epoch'],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+
+    curr_epoch_block_remains=$((curr_epoch_last_block-cur_bn))
+    curr_epoch_seconds_to_last_block=$((curr_epoch_block_remains*block_secs))
+
+    next_epoch_last_block=$(curl -d '{
+        "jsonrpc":"2.0",
+        "method":"hmy_epochLastBlock",
+        "params":['$((cur_epoch+1))'],
+        "id":1
+    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+
+    echo "current epoch last block: $curr_epoch_last_block"
+    echo "next epoch last block: $next_epoch_last_block"
+    echo "blocks to end of current epoch: $curr_epoch_block_remains"
+
+    epoch_blocks=$((next_epoch_last_block-curr_epoch_last_block))
+    epoch_duration_secs=$((epoch_blocks*block_secs))
+    echo "Epoch blocks: $epoch_blocks"
+    # Get the current time in seconds since epoch
+    current_time=$(date +%s)
+    echo "current time: $current_time"
+    echo "seconds to last block of current epoch: $curr_epoch_seconds_to_last_block"
+
+    printf "%-20s %-20s %-20s %-20s\n" "--------" "--------" "--------" "--------"
+    printf "%-20s %-20s %-20s %-20s\n" "epoch" "last block" "start time(UTC)" "end time(UTC)"
+    printf "%-20s %-20s %-20s %-20s\n" "--------" "--------" "--------" "--------"
+
+    for ((i = 0; i <= n_epochs; i++))
+    do
+        epoch=$((cur_epoch+i))
+        bns=$((i*epoch_blocks))
+        bns=$((bns+curr_epoch_block_remains))
+        secs=$((bns*block_secs))
+        epoch_last_block=$((curr_epoch_last_block+bns))
+        last_block_time=$((current_time+secs))
+        last_block_local_time=$(date -d @$last_block_time "+%Y-%m-%d %H:%M:%S")
+        last_block_utc_time=$(date -u -d @$last_block_time "+%Y-%m-%d %H:%M:%S")
+        first_block_time=$((last_block_time-epoch_duration_secs))
+        first_block_local_time=$(date -d @$first_block_time "+%Y-%m-%d %H:%M:%S")
+        first_block_utc_time=$(date -u -d @$first_block_time "+%Y-%m-%d %H:%M:%S")
+        printf "%-20s %-20s %-20s %-20s\n" "$epoch" "$epoch_last_block" "$first_block_utc_time" "$last_block_utc_time"
+        #echo "epoch $epoch:   last block: $epoch_last_block    time: $block_time"
+    done
+
+    printf "%-20s %-20s %-20s %-20s\n" "--------" "--------" "--------" "--------"
+
+    waitForAnyKey
+}
+
 function others {
     others_options=(1 "install golang"
                     2 "restart node"
                     3 "compress database (to: db{0/1/2/3}.tar.gz)"
                     4 "decompress database (from: db{0/1/2/3}.tar.gz)"
-                    5 "create a service for harmony binary")
+                    5 "create a service for harmony binary"
+                    6 "calculate hard fork date")
 
     others_menu_result="done"
 
@@ -2262,6 +2352,9 @@ function others {
                     ;;
                 5)
                     setupSystemd
+                    ;;
+                6)
+                    calculateHF
                     ;;
                 *)  
                     others_menu_result="back"
