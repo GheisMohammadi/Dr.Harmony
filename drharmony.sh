@@ -2226,7 +2226,57 @@ function decompressDB {
     waitForAnyKey
 }
 
+function askForNetworkEndpoint {
+    network_endpoint_options=(1 "mainnet"
+                     2 "testnet"
+                     3 "devnet"
+                     4 "localnet (0.0.0.0:9500)"
+                     5 "custom")
+
+    endpoint_network_id=$(dialog --clear \
+                    --backtitle "$BACKTITLE" \
+                    --title "Select network" \
+                    --ok-label "Next" --nocancel \
+                    --menu "$MENU" \
+                    $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                    "${network_endpoint_options[@]}" \
+                    2>&1 >/dev/tty)
+    clear
+
+    network_endpoint=""
+    network_name=""
+
+    case $endpoint_network_id in
+            1)
+                network_name="mainnet"
+                network_endpoint="https://api.s0.t.hmny.io"
+                ;;
+            2)
+                network_name="testnet"
+                network_endpoint="https://api.s0.b.hmny.io"
+                ;;
+            3)
+                network_name="devnet"
+                network_endpoint="https://api.s0.ps.hmny.io"
+                ;;
+            4)
+                network_name="localnet"
+                network_endpoint="0.0.0.0:9500"
+                ;;
+            5)
+                network_name="custom"
+                exec 3>&1;
+                network_endpoint=$(dialog --nocancel --ok-label "Next" --inputbox "network endpoint?" 0 0 "https://api.harmony.one" 2>&1 1>&3);
+                exitcode=$?;
+                exec 3>&-;
+                ;;
+    esac
+
+}
+
 function calculateHF {
+
+    askForNetworkEndpoint
 
     exec 3>&1;
     n_epochs=$(dialog --nocancel --ok-label "Next" --inputbox "how many epochs?" 0 0 "20" 2>&1 1>&3);
@@ -2238,16 +2288,17 @@ function calculateHF {
     exitcode=$?;
     exec 3>&-;
 
-    endpoint="https://api.s0.t.hmny.io"
-
     clear
+
+    echo "selected network: $network_name -> $network_endpoint"
+
     echo "fetching block number ..."
     cur_bn=$(curl -d '{
         "jsonrpc":"2.0",
         "method":"hmyv2_blockNumber",
         "params":[],
         "id":1
-    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+    }' -H 'Content-Type:application/json' -X POST $network_endpoint 2>/dev/null | jq -r ".result") 
 
     echo "fetching epoch number ..."
     cur_epoch=$(curl -d '{
@@ -2255,7 +2306,7 @@ function calculateHF {
         "method":"hmyv2_getEpoch",
         "params":[],
         "id":1
-    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+    }' -H 'Content-Type:application/json' -X POST $network_endpoint 2>/dev/null | jq -r ".result") 
 
     echo "Block Number: $cur_bn"
     echo "Epoch Number: $cur_epoch"
@@ -2265,7 +2316,7 @@ function calculateHF {
         "method":"hmy_epochLastBlock",
         "params":['$cur_epoch'],
         "id":1
-    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+    }' -H 'Content-Type:application/json' -X POST $network_endpoint 2>/dev/null | jq -r ".result") 
 
     curr_epoch_block_remains=$((curr_epoch_last_block-cur_bn))
     curr_epoch_seconds_to_last_block=$((curr_epoch_block_remains*block_secs))
@@ -2275,7 +2326,7 @@ function calculateHF {
         "method":"hmy_epochLastBlock",
         "params":['$((cur_epoch+1))'],
         "id":1
-    }' -H 'Content-Type:application/json' -X POST $endpoint 2>/dev/null | jq -r ".result") 
+    }' -H 'Content-Type:application/json' -X POST $network_endpoint 2>/dev/null | jq -r ".result") 
 
     echo "current epoch last block: $curr_epoch_last_block"
     echo "next epoch last block: $next_epoch_last_block"
@@ -2296,10 +2347,10 @@ function calculateHF {
     for ((i = 0; i <= n_epochs; i++))
     do
         epoch=$((cur_epoch+i))
-        bns=$((i*epoch_blocks))
-        bns=$((bns+curr_epoch_block_remains))
+        epoch_bns=$((i*epoch_blocks))
+        bns=$((epoch_bns+curr_epoch_block_remains))
         secs=$((bns*block_secs))
-        epoch_last_block=$((curr_epoch_last_block+bns))
+        epoch_last_block=$((curr_epoch_last_block+epoch_bns))
         last_block_time=$((current_time+secs))
         last_block_local_time=$(date -d @$last_block_time "+%Y-%m-%d %H:%M:%S")
         last_block_utc_time=$(date -u -d @$last_block_time "+%Y-%m-%d %H:%M:%S")
@@ -2307,7 +2358,6 @@ function calculateHF {
         first_block_local_time=$(date -d @$first_block_time "+%Y-%m-%d %H:%M:%S")
         first_block_utc_time=$(date -u -d @$first_block_time "+%Y-%m-%d %H:%M:%S")
         printf "%-20s %-20s %-20s %-20s\n" "$epoch" "$epoch_last_block" "$first_block_utc_time" "$last_block_utc_time"
-        #echo "epoch $epoch:   last block: $epoch_last_block    time: $block_time"
     done
 
     printf "%-20s %-20s %-20s %-20s\n" "--------" "--------" "--------" "--------"
