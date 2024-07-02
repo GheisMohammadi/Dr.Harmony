@@ -1532,6 +1532,11 @@ function serviceDetails {
     waitForAnyKey
 }
 
+function showServiceSystemd {
+    sudo cat /etc/systemd/system/bootnode.service 
+    waitForAnyKey
+}
+
 function editServiceDetails {
     sudo nano /etc/systemd/system/harmony.service 
     sudo systemctl daemon-reload
@@ -1546,7 +1551,8 @@ function harmonyService {
             5 "logs"
             6 "live logs"
             7 "details"
-            8 "edit systemd details")
+            8 "systemd details"
+            9 "edit systemd details")
 
     service_menu_result="done"
 
@@ -1584,6 +1590,9 @@ function harmonyService {
                     serviceDetails
                     ;;
                 8)
+                    showServiceSystemd
+                    ;;
+                9)
                     editServiceDetails
                     ;;
                 *)
@@ -1638,6 +1647,11 @@ function serviceBootNodeDetails {
     waitForAnyKey
 }
 
+function showBootnodeSystemd {
+    sudo cat /etc/systemd/system/bootnode.service 
+    waitForAnyKey
+}
+
 function editBootnodeServiceDetails {
     sudo nano /etc/systemd/system/bootnode.service 
     sudo systemctl daemon-reload
@@ -1652,7 +1666,8 @@ function bootnodeService {
             5 "logs"
             6 "live logs"
             7 "details"
-            8 "edit systemd details")
+            8 "systemd details"
+            9 "edit systemd details")
 
     bootnode_service_menu_result="done"
 
@@ -1690,6 +1705,9 @@ function bootnodeService {
                     serviceBootNodeDetails
                     ;;
                 8)
+                    showBootnodeSystemd
+                    ;;
+                9)
                     editBootnodeServiceDetails
                     ;;
                 *)
