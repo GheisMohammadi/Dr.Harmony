@@ -1644,7 +1644,7 @@ function editBootnodeServiceDetails {
     waitForAnyKey
 }
 
-function harmonyService {
+function bootnodeService {
     bootnode_service_options=(1 "status"
             2 "restart"
             3 "start"
