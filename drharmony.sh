@@ -1595,6 +1595,112 @@ function harmonyService {
 }
 
 #========================================================================
+# BOOT NODE SERVICE
+#========================================================================
+function restartBootnodeService {
+    echo "restarting bootnode service..."
+    sudo systemctl restart bootnode
+    echo "done."
+    waitForAnyKey
+}
+
+function startBootnodeService {
+    echo "starting bootnode service..."
+    sudo systemctl start bootnode
+    echo "done."
+    waitForAnyKey
+}
+
+function stopBootnodeService {
+    echo "stopping bootnode service..."
+    sudo systemctl stop bootnode
+    echo "done."
+    waitForAnyKey
+}
+
+function statusBootnodeService {
+    sudo systemctl status bootnode
+    waitForAnyKey
+}
+
+function serviceBootnodeLogs {
+    sudo journalctl -u bootnode -n 1000 -q --no-pager --all
+    waitForAnyKey
+}
+
+function serviceBootnodeLiveLogs {
+    sudo journalctl -u bootnode -n 100 -q --no-pager --all -f
+    waitForAnyKey
+}
+
+function serviceBootNodeDetails {
+    sudo systemctl show bootnode
+    waitForAnyKey
+}
+
+function editBootnodeServiceDetails {
+    sudo nano /etc/systemd/system/bootnode.service 
+    sudo systemctl daemon-reload
+    waitForAnyKey
+}
+
+function harmonyService {
+    bootnode_service_options=(1 "status"
+            2 "restart"
+            3 "start"
+            4 "stop"
+            5 "logs"
+            6 "live logs"
+            7 "details"
+            8 "edit systemd details")
+
+    bootnode_service_menu_result="done"
+
+    while [ $bootnode_service_menu_result == "done" ]
+    do
+        selected_service_option=$(dialog --clear \
+                        --backtitle "Bootnode Service" \
+                        --title "Bootnode Service" \
+                        --ok-label "Next" --cancel-label "Back" \
+                        --menu "$MENU" \
+                        $HEIGHT $WIDTH $CHOICE_HEIGHT \
+                        "${bootnode_service_options[@]}" \
+                        2>&1 >/dev/tty)
+        clear
+        case $selected_service_option in
+                1)
+                    statusBootnodeService 
+                    ;;
+                2)
+                    restartBootnodeService
+                    ;;
+                3)
+                    startBootnodeService
+                    ;;
+                4)
+                    stopBootnodeService
+                    ;;
+                5)
+                    serviceBootnodeLogs
+                    ;;
+                6)
+                    serviceBootnodeLiveLogs
+                    ;;
+                7)
+                    serviceBootNodeDetails
+                    ;;
+                8)
+                    editBootnodeServiceDetails
+                    ;;
+                *)
+                    bootnode_service_menu_result="back"
+                    ;;
+        esac
+
+    done
+}
+
+#========================================================================
 # Adjustments
 #========================================================================
 function revertBeacon {
@@ -2424,9 +2530,10 @@ function showMainMenu {
              5 "trouble shooting"
              6 "logs and profile report (pprof)"
              7 "harmony service"
-             8 "blockchain"
-             9 "security"
-             10 "others")
+             8 "bootnode service"
+             9 "blockchain"
+             10 "security"
+             11 "others")
 
     main_menu_result="done"
 
@@ -2468,12 +2575,15 @@ function showMainMenu {
                 harmonyService
                 ;;
             8)
-                blockchain
+                bootnodeService
                 ;;
             9)
-                checkSecurity
+                blockchain
                 ;;
             10)
+                checkSecurity
+                ;;
+            11)
                 others
                 ;;
             *)
