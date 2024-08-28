@@ -241,10 +241,12 @@ function installHarmonyDependencies {
 function installGo {
     GO_OK=$(go version|grep "go version")
     if [ "$GO_OK" = "" ]; then
-        go_version="1.19.5"
+        go_version="1.22.5"
         go_file_name="go$go_version.linux-amd64.tar.gz"
         go_url="https://storage.googleapis.com/golang/$go_file_name"
         wget $go_url
+        #we have to remove current go folder, otherwise it creates a broken go
+        rm -rf /usr/local/go
         sudo tar -C /usr/local -xzvf $go_file_name
         rm $go_file_name
         sudo ln -sfn /usr/local/go/bin/go /usr/bin/
