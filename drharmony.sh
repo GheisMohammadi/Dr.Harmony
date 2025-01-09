@@ -1535,7 +1535,7 @@ function serviceDetails {
 }
 
 function showServiceSystemd {
-    sudo cat /etc/systemd/system/bootnode.service 
+    sudo cat /etc/systemd/system/harmony.service 
     waitForAnyKey
 }
 
