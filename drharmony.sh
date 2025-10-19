@@ -37,6 +37,23 @@ function checkVersion {
 }
 
 checkVersion
+
+#========================================================================
+# User Inputs
+#========================================================================
+function waitForAnyKey {
+    echo "------------------------------------------"
+    read -p "Hit enter to continue ..."
+}
+
+function getUserInput {
+    exec 3>&1;
+    user_input=$(dialog --inputbox $input_msg 0 0 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+    echo $user_input $exitcode;
+}
+
 #========================================================================
 # init binaries
 #========================================================================
@@ -58,41 +75,119 @@ fi
 
 
 HARMONY=$(which harmony)
-LOGS_DIR="${a%/*}/latest"
 if [ -z "$HARMONY" ]; then
     HARMONY=./harmony
-    LOGS_DIR="./latest"
     if [[ ! -f $HARMONY ]]; then
         HARMONY=/usr/sbin/harmony
-        LOGS_DIR="./usr/sbin"
         if [[ ! -f $HARMONY ]]; then
             HARMONY=~/harmony
-            LOGS_DIR="~"
             if [[ ! -f $HARMONY ]]; then
                 # harmony is not installed
                 HARMONY=""
-                LOGS_DIR=""
                 echo "harmony not found."
             fi
         fi
     fi
 fi
 
-#========================================================================
-# User Inputs
-#========================================================================
-function waitForAnyKey {
-    echo "------------------------------------------"
-    read -p "Hit enter to continue ..."
+CONFIG_FILE_PATH="./harmony.conf"
+if [[ ! -f $CONFIG_FILE_PATH ]]; then
+    CONFIG_FILE_PATH=/usr/sbin/harmony.conf
+    if [[ ! -f $CONFIG_FILE_PATH ]]; then
+        CONFIG_FILE_PATH=~/harmony.conf
+        if [[ ! -f $CONFIG_FILE_PATH ]]; then
+            # harmony.conf is not installed
+            CONFIG_FILE_PATH=""
+            echo "harmony.conf not found."
+        fi
+    fi
+fi
+
+# Function to parse config file and extract log directory
+function parseLogDirectoryFromConfig {
+    local config_file="$1"
+    local log_dir=""
+    
+    if [ -f "$config_file" ]; then
+        # Look for [Log] section and extract FileName and Folder
+        local in_log_section=false
+        local file_name=""
+        local folder=""
+        
+        while IFS= read -r line; do
+            # Remove leading/trailing whitespace
+            line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            
+            # Check if we're entering [Log] section
+            if [[ "$line" == "[Log]" ]]; then
+                in_log_section=true
+                continue
+            fi
+            
+            # Check if we're leaving the [Log] section (next section starts)
+            if [[ "$line" =~ ^\[.*\]$ ]] && [[ "$line" != "[Log]" ]]; then
+                in_log_section=false
+                continue
+            fi
+            
+            # Parse FileName and Folder within [Log] section
+            if [ "$in_log_section" = true ]; then
+                if [[ "$line" =~ ^FileName[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+                    file_name="${BASH_REMATCH[1]}"
+                elif [[ "$line" =~ ^Folder[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+                    folder="${BASH_REMATCH[1]}"
+                fi
+            fi
+        done < "$config_file"
+        
+        # Construct the full log directory path
+        if [ ! -z "$folder" ] && [ ! -z "$file_name" ]; then
+            # Remove any quotes from the values
+            folder=$(echo "$folder" | sed 's/^"//;s/"$//')
+            file_name=$(echo "$file_name" | sed 's/^"//;s/"$//')
+            
+            # If folder is relative, make it absolute based on config file location
+            if [[ "$folder" != /* ]]; then
+                local config_dir=$(dirname "$config_file")
+                # Remove leading ./ from folder if it exists
+                folder=$(echo "$folder" | sed 's|^\./||')
+                # Only prepend config_dir if folder is not empty after removing ./
+                if [ ! -z "$folder" ]; then
+                    folder="$config_dir/$folder"
+                else
+                    folder="$config_dir"
+                fi
+            fi
+            
+            log_dir="$folder"
+        fi
+    fi
+    
+    echo "$log_dir"
 }
 
-function getUserInput {
-    exec 3>&1;
-    user_input=$(dialog --inputbox $input_msg 0 0 2>&1 1>&3);
-    exitcode=$?;
-    exec 3>&-;
-    echo $user_input $exitcode;
-}
+# Parse log directory from config file
+LOGS_DIR=""
+if [ ! -z "$CONFIG_FILE_PATH" ]; then
+    LOGS_DIR=$(parseLogDirectoryFromConfig "$CONFIG_FILE_PATH")
+    if [ -z "$LOGS_DIR" ]; then
+        LOGS_DIR="./latest"  # fallback to default
+        echo "Could not parse log directory from config, using default: $LOGS_DIR"
+    fi
+else
+    LOGS_DIR="./latest"  # fallback to default
+    echo "No config file found, using default log directory: $LOGS_DIR"
+fi
+
+echo "------------------------------------------"
+echo "Parsed paths"
+echo "------------------------------------------"
+# print the paths of the binaries and the logs directory
+echo "HMY: $HMY"
+echo "HARMONY: $HARMONY"
+echo "CONFIG_FILE_PATH: $CONFIG_FILE_PATH"
+echo "LOGS_DIR: $LOGS_DIR"
+waitForAnyKey
 
 #========================================================================
 # Requirements
@@ -2000,13 +2095,139 @@ function fixBlockedByHetzner {
     waitForAnyKey
 }
 
+function logsBeforeAfterLastBlockProduction {
+    echo "issue: logs before/after last block production"
+
+    # Get user input for lines before last block production
+    exec 3>&1;
+    LINES_BEFORE=$(dialog --nocancel --ok-label "Next" --inputbox "lines before last block production" 0 0 "0" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # Get user input for lines after last block production
+    exec 3>&1;
+    LINES_AFTER=$(dialog --nocancel --ok-label "Next" --inputbox "lines after last block production" 0 0 "1000" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # Store current directory
+    curDir=$PWD
+
+    # Navigate to logs directory
+    cd ${LOGS_DIR}
+
+    # Check if log file exists
+    if [ -f "zerolog-harmony.log" ]; then
+        echo "Analyzing logs in: ${LOGS_DIR}"
+        
+        # Find the last block production entry
+        last_block_line=$(sudo grep -n "BINGO\|bingo\|HOORAY\|hooray" zerolog-harmony.log 2>/dev/null | tail -1 | cut -d: -f1)
+        
+        if [ ! -z "$last_block_line" ]; then
+            echo "Found last block production at line: $last_block_line"
+            
+            # Calculate line numbers for extraction
+            start_line=$((last_block_line - LINES_BEFORE))
+            end_line=$((last_block_line + LINES_AFTER))
+            
+            # Ensure start_line is not negative
+            if [ $start_line -lt 1 ]; then
+                start_line=1
+            fi
+            
+            echo "Extracting logs from line $start_line to $end_line..."
+            echo "=========================================="
+            
+            # Extract and display the logs
+            sudo sed -n "${start_line},${end_line}p" zerolog-harmony.log 2>/dev/null
+            
+            echo "=========================================="
+            echo "Log extraction completed."
+        else
+            echo "No block production entries found in the log file."
+        fi
+    else
+        echo "Log file not found: ${LOGS_DIR}/zerolog-harmony.log"
+    fi
+
+    # Return to original directory
+    cd $curDir
+
+    echo "done."
+    waitForAnyKey
+}
+
+function logsBeforeAfterOccuranceOfLastStagedStreamSync {
+    echo "issue: logs before/after occurance of an error"
+
+    # Get user input for lines before last block production
+    exec 3>&1;
+    LINES_BEFORE=$(dialog --nocancel --ok-label "Next" --inputbox "lines before" 0 0 "100" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # Get user input for lines after last block production
+    exec 3>&1;
+    LINES_AFTER=$(dialog --nocancel --ok-label "Next" --inputbox "lines after" 0 0 "1000" 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+
+    # Store current directory
+    curDir=$PWD
+
+    # Navigate to logs directory
+    cd ${LOGS_DIR}
+
+    # Check if log file exists
+    if [ -f "zerolog-harmony.log" ]; then
+        echo "Analyzing logs in: ${LOGS_DIR}"
+        
+        # Find the last block production entry
+        last_block_line=$(sudo grep -n "STAGED_STREAM_SYNC\|staged stream sync" zerolog-harmony.log 2>/dev/null | tail -1 | cut -d: -f1)
+        
+        if [ ! -z "$last_block_line" ]; then
+            echo "Found last last staged sync log at line: $last_block_line"
+            
+            # Calculate line numbers for extraction
+            start_line=$((last_block_line - LINES_BEFORE))
+            end_line=$((last_block_line + LINES_AFTER))
+            
+            # Ensure start_line is not negative
+            if [ $start_line -lt 1 ]; then
+                start_line=1
+            fi
+            
+            echo "Extracting logs from line $start_line to $end_line..."
+            echo "=========================================="
+            
+            # Extract and display the logs
+            sudo sed -n "${start_line},${end_line}p" zerolog-harmony.log 2>/dev/null
+            
+            echo "=========================================="
+            echo "Log extraction completed."
+        else
+            echo "No logs for staged stream sync entries found in the log file."
+        fi
+    else
+        echo "Log file not found: ${LOGS_DIR}/zerolog-harmony.log"
+    fi
+
+    # Return to original directory
+    cd $curDir
+
+    echo "done."
+    waitForAnyKey
+}
+
 function troubleShooting {
 
     issues=(1 "node stuck behind n blocks"
             2 "not enough signing power"
             3 "storage limit"
             4 "p2p out of memory"
-            5 "node is blocked by provider")
+            5 "node is blocked by provider"
+            6 "logs before/after last block production"
+            7 "logs before/after occurance of an error")
 
     troubleShooting_menu_result="done"
 
@@ -2037,6 +2258,12 @@ function troubleShooting {
                     ;;
                 5)
                     fixBlockedByHetzner
+                    ;;
+                6)
+                    logsBeforeAfterLastBlockProduction
+                    ;;
+                7)
+                    logsBeforeAfterOccuranceOfLastStagedStreamSync
                     ;;
                 *)  
                     troubleShooting_menu_result="back"
